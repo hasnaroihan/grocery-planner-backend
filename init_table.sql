@@ -25,6 +25,7 @@ CREATE TABLE IF NOT EXISTS public.recipes
     id bigint NOT NULL GENERATED ALWAYS AS IDENTITY ( INCREMENT 1 START 1 ),
     name character varying(255) NOT NULL DEFAULT 'unknown',
     author uuid NOT NULL,
+	portion integer NOT NULL DEFAULT 1,
     created_at date NOT NULL,
     modified_at date NOT NULL,
     PRIMARY KEY (id)
@@ -63,6 +64,7 @@ CREATE TABLE IF NOT EXISTS public.schedules_recipes
 (
     schedule_id bigint NOT NULL,
     recipe_id bigint NOT NULL,
+	portion integer NOT NULL DEFAULT 1,
     PRIMARY KEY (schedule_id, recipe_id)
 );
 
