@@ -5,6 +5,9 @@ endif
 postgres:
 	docker run --name postgres15-1-alpine -p 5432:5432 -e POSTGRES_USER=$(POSTGRES_USER) -e POSTGRES_PASSWORD=$(POSTGRES_PASSWORD) -d postgres:15.1-alpine
 
+runpostgres:
+	docker start postgres15-1-alpine
+	
 createuser:
 	docker exec -it postgres15-1-alpine createuser --username=$(POSTGRES_USER) grocerypl
 
@@ -23,4 +26,4 @@ migrateup:
 migratedown:
 	migrate -path db/migration -database "postgresql://$(POSTGRES_USER):$(POSTGRES_PASSWORD)@$(HOST):5432/grocery-planner?sslmode=disable" -verbose down
 
-.PHONY: postgres createuser createdb dropdb dropuser migrateup migratedown
+.PHONY: postgres createuser createdb dropdb dropuser migrateup migratedown runpostgres
