@@ -22,8 +22,9 @@ CREATE TABLE IF NOT EXISTS public.recipes
     name character varying(255) NOT NULL DEFAULT 'unknown',
     author uuid NOT NULL,
 	portion integer NOT NULL DEFAULT 1,
+    steps text DEFAULT NULL,
     created_at timestamp with time zone NOT NULL DEFAULT (now()),
-    modified_at date NOT NULL,
+    modified_at timestamp with time zone NOT NULL DEFAULT (now()),
     PRIMARY KEY (id)
 );
 
@@ -37,16 +38,16 @@ CREATE TABLE IF NOT EXISTS public.users
     role character varying(25) NOT NULL DEFAULT 'common',
     verified_at timestamp with time zone DEFAULT null,
     PRIMARY KEY (id),
-    UNIQUE (id, username)
+    UNIQUE (id, username, email)
 );
 
 CREATE TABLE IF NOT EXISTS public.recipes_ingredients
 (
-    ingredients_id integer NOT NULL,
-    recipes_id bigint NOT NULL,
+    ingredient_id integer NOT NULL,
+    recipe_id bigint NOT NULL,
     amount real NOT NULL,
     unit_id integer NOT NULL,
-    PRIMARY KEY (ingredients_id, recipes_id)
+    PRIMARY KEY (ingredient_id, recipe_id)
 );
 
 CREATE TABLE IF NOT EXISTS public.schedules
@@ -64,13 +65,6 @@ CREATE TABLE IF NOT EXISTS public.schedules_recipes
     PRIMARY KEY (schedule_id, recipe_id)
 );
 
-CREATE TABLE IF NOT EXISTS public.recipes_steps
-(
-    recipe_id bigint NOT NULL,
-    "number" integer NOT NULL,
-    steps text NOT NULL,
-    PRIMARY KEY (recipe_id, "number")
-);
 
 ALTER TABLE IF EXISTS public.ingredients
     ADD CONSTRAINT default_unit FOREIGN KEY (default_unit)
@@ -88,7 +82,7 @@ ALTER TABLE IF EXISTS public.recipes
 
 
 ALTER TABLE IF EXISTS public.recipes_ingredients
-    ADD CONSTRAINT fk_recipe_ingredients FOREIGN KEY (ingredients_id)
+    ADD CONSTRAINT fk_recipe_ingredients FOREIGN KEY (ingredient_id)
     REFERENCES public.ingredients (id) MATCH SIMPLE
     ON UPDATE CASCADE
     ON DELETE CASCADE
@@ -96,7 +90,7 @@ ALTER TABLE IF EXISTS public.recipes_ingredients
 
 
 ALTER TABLE IF EXISTS public.recipes_ingredients
-    ADD CONSTRAINT fk_recipe_recipe FOREIGN KEY (recipes_id)
+    ADD CONSTRAINT fk_recipe_recipe FOREIGN KEY (recipe_id)
     REFERENCES public.recipes (id) MATCH SIMPLE
     ON UPDATE RESTRICT
     ON DELETE CASCADE
@@ -122,18 +116,11 @@ ALTER TABLE IF EXISTS public.schedules_recipes
 ALTER TABLE IF EXISTS public.schedules_recipes
     ADD CONSTRAINT fk_schedule_recipe FOREIGN KEY (recipe_id)
     REFERENCES public.recipes (id) MATCH SIMPLE
-    ON UPDATE RESTRICT
-    ON DELETE CASCADE
-    NOT VALID;
-
-
-ALTER TABLE IF EXISTS public.recipes_steps
-    ADD CONSTRAINT fk_recipes_steps FOREIGN KEY (recipe_id)
-    REFERENCES public.recipes (id) MATCH SIMPLE
-    ON UPDATE RESTRICT
+    ON UPDATE CASCADE
     ON DELETE CASCADE
     NOT VALID;
 
 CREATE INDEX idx_ingredients on public.ingredients (id, name);
 CREATE INDEX idx_recipes on public.recipes (id, name);
 CREATE INDEX idx_users on public.users (id, username);
+CREATE INDEX idx_recipes_ingredients on public.recipes_ingredients (recipe_id);

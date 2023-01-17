@@ -7,6 +7,9 @@ postgres:
 
 runpostgres:
 	docker start postgres15-1-alpine
+
+stopposttgres:
+	docker stop postgres15-1-alpine
 	
 createuser:
 	docker exec -it postgres15-1-alpine createuser --username=$(POSTGRES_USER) grocerypl
@@ -26,4 +29,8 @@ migrateup:
 migratedown:
 	migrate -path db/migration -database "postgresql://$(POSTGRES_USER):$(POSTGRES_PASSWORD)@$(HOST):5432/grocery-planner?sslmode=disable" -verbose down
 
-.PHONY: postgres createuser createdb dropdb dropuser migrateup migratedown runpostgres
+# sql generate command from docker
+sqlc:
+	docker run --rm -v "$(CURDIR):/src" -w /src kjconroy/sqlc generate
+
+.PHONY: postgres createuser createdb dropdb dropuser migrateup migratedown runpostgres stoppostgres
