@@ -9,7 +9,7 @@ CREATE TABLE IF NOT EXISTS public.ingredients
     PRIMARY KEY (id)
 );
 
-CREATE TABLE IF NOT EXISTS public.unit
+CREATE TABLE IF NOT EXISTS public.units
 (
     id integer NOT NULL GENERATED ALWAYS AS IDENTITY ( INCREMENT 1 START 1 MINVALUE 1 ),
     name character varying(25) NOT NULL,
@@ -53,6 +53,7 @@ CREATE TABLE IF NOT EXISTS public.recipes_ingredients
 CREATE TABLE IF NOT EXISTS public.schedules
 (
     id bigint NOT NULL GENERATED ALWAYS AS IDENTITY ( INCREMENT 1 START 1 MINVALUE 1 ),
+    author uuid DEFAULT NULL,
     created_at timestamp with time zone NOT NULL DEFAULT (now()),
     PRIMARY KEY (id)
 );
@@ -68,7 +69,7 @@ CREATE TABLE IF NOT EXISTS public.schedules_recipes
 
 ALTER TABLE IF EXISTS public.ingredients
     ADD CONSTRAINT default_unit FOREIGN KEY (default_unit)
-    REFERENCES public.unit (id) MATCH SIMPLE
+    REFERENCES public.units (id) MATCH SIMPLE
     ON UPDATE CASCADE
     ON DELETE SET NULL
     NOT VALID;
@@ -99,11 +100,16 @@ ALTER TABLE IF EXISTS public.recipes_ingredients
 
 ALTER TABLE IF EXISTS public.recipes_ingredients
     ADD CONSTRAINT fk_recipe_unit FOREIGN KEY (unit_id)
-    REFERENCES public.unit (id) MATCH SIMPLE
+    REFERENCES public.units (id) MATCH SIMPLE
     ON UPDATE CASCADE
     ON DELETE SET NULL
     NOT VALID;
 
+ALTER TABLE IF EXISTS public.schedules
+    ADD CONSTRAINT fk_schedules FOREIGN KEY (author)
+    REFERENCES public.users (id) MATCH SIMPLE
+    ON UPDATE RESTRICT
+    ON DELETE CASCADE;
 
 ALTER TABLE IF EXISTS public.schedules_recipes
     ADD CONSTRAINT fk_schedule_schedule FOREIGN KEY (schedule_id)

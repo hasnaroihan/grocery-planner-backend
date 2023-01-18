@@ -36,8 +36,9 @@ type RecipesIngredient struct {
 }
 
 type Schedule struct {
-	ID        int64     `json:"id"`
-	CreatedAt time.Time `json:"createdAt"`
+	ID        int64         `json:"id"`
+	Author    uuid.NullUUID `json:"author"`
+	CreatedAt time.Time     `json:"createdAt"`
 }
 
 type SchedulesRecipe struct {
