@@ -8,7 +8,7 @@ postgres:
 runpostgres:
 	docker start postgres15-1-alpine
 
-stopposttgres:
+stoppostgres:
 	docker stop postgres15-1-alpine
 	
 createuser:
@@ -33,4 +33,7 @@ migratedown:
 sqlc:
 	docker run --rm -v "$(CURDIR):/src" -w /src kjconroy/sqlc generate
 
-.PHONY: postgres createuser createdb dropdb dropuser migrateup migratedown runpostgres stoppostgres
+test:
+	go test -v -cover ./...
+
+.PHONY: postgres createuser createdb dropdb dropuser migrateup migratedown runpostgres stoppostgres sqlc test

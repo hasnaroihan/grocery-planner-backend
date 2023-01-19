@@ -6,14 +6,16 @@ CREATE TABLE IF NOT EXISTS public.ingredients
     name character varying(100) NOT NULL,
     created_at timestamp with time zone NOT NULL DEFAULT (now()),
     default_unit integer,
-    PRIMARY KEY (id)
+    PRIMARY KEY (id),
+    UNIQUE (id, name)
 );
 
 CREATE TABLE IF NOT EXISTS public.units
 (
     id integer NOT NULL GENERATED ALWAYS AS IDENTITY ( INCREMENT 1 START 1 MINVALUE 1 ),
     name character varying(25) NOT NULL,
-    PRIMARY KEY (id)
+    PRIMARY KEY (id),
+    UNIQUE (id, name)
 );
 
 CREATE TABLE IF NOT EXISTS public.recipes

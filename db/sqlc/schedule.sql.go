@@ -114,7 +114,47 @@ func (q *Queries) GetScheduleRecipe(ctx context.Context, scheduleID int64) ([]Sc
 	return items, nil
 }
 
-const listSchedule = `-- name: ListSchedule :many
+const listGroceries = `-- name: ListGroceries :many
+SELECT ingredients.id, ingredients.name
+FROM ingredients
+INNER JOIN recipes_ingredients
+ON ingredients.id = recipes_ingedients.ingredient_id
+INNER JOIN schedules_recipes
+ON recipes_ingredients.recipe_id = schedules_recipes.recipe_id
+WHERE schedules_recipes.schedule_id = $1
+GROUP BY ingredients.id
+ORDER BY ingredients.name
+`
+
+type ListGroceriesRow struct {
+	ID   int32  `json:"id"`
+	Name string `json:"name"`
+}
+
+func (q *Queries) ListGroceries(ctx context.Context, scheduleID int64) ([]ListGroceriesRow, error) {
+	rows, err := q.db.QueryContext(ctx, listGroceries, scheduleID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListGroceriesRow
+	for rows.Next() {
+		var i ListGroceriesRow
+		if err := rows.Scan(&i.ID, &i.Name); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listSchedules = `-- name: ListSchedules :many
 SELECT id, author, created_at from schedules
 WHERE author = $1
 ORDER BY created_at
@@ -122,14 +162,14 @@ LIMIT $2
 OFFSET $3
 `
 
-type ListScheduleParams struct {
+type ListSchedulesParams struct {
 	Author uuid.NullUUID `json:"author"`
 	Limit  int32         `json:"limit"`
 	Offset int32         `json:"offset"`
 }
 
-func (q *Queries) ListSchedule(ctx context.Context, arg ListScheduleParams) ([]Schedule, error) {
-	rows, err := q.db.QueryContext(ctx, listSchedule, arg.Author, arg.Limit, arg.Offset)
+func (q *Queries) ListSchedules(ctx context.Context, arg ListSchedulesParams) ([]Schedule, error) {
+	rows, err := q.db.QueryContext(ctx, listSchedules, arg.Author, arg.Limit, arg.Offset)
 	if err != nil {
 		return nil, err
 	}

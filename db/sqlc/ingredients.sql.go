@@ -62,52 +62,13 @@ func (q *Queries) GetIngredient(ctx context.Context, id int32) (Ingredient, erro
 	return i, err
 }
 
-const listGrocery = `-- name: ListGrocery :many
-SELECT DISTINCT ingredients.id, ingredients.name
-FROM ingredients
-INNER JOIN recipes_ingredients
-ON ingredients.id = recipes_ingedients.ingredient_id
-INNER JOIN schedules_recipes
-ON recipes_ingredients.recipe_id = schedules_recipes.recipe_id
-WHERE schedules_recipes.schedule_id = $1
-ORDER BY ingredients.name
-`
-
-type ListGroceryRow struct {
-	ID   int32  `json:"id"`
-	Name string `json:"name"`
-}
-
-func (q *Queries) ListGrocery(ctx context.Context, scheduleID int64) ([]ListGroceryRow, error) {
-	rows, err := q.db.QueryContext(ctx, listGrocery, scheduleID)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []ListGroceryRow
-	for rows.Next() {
-		var i ListGroceryRow
-		if err := rows.Scan(&i.ID, &i.Name); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
-const listIngredient = `-- name: ListIngredient :many
+const listIngredients = `-- name: ListIngredients :many
 SELECT id, name, created_at, default_unit from ingredients
 ORDER BY name
 `
 
-func (q *Queries) ListIngredient(ctx context.Context) ([]Ingredient, error) {
-	rows, err := q.db.QueryContext(ctx, listIngredient)
+func (q *Queries) ListIngredients(ctx context.Context) ([]Ingredient, error) {
+	rows, err := q.db.QueryContext(ctx, listIngredients)
 	if err != nil {
 		return nil, err
 	}
@@ -134,26 +95,26 @@ func (q *Queries) ListIngredient(ctx context.Context) ([]Ingredient, error) {
 	return items, nil
 }
 
-const searchIngredient = `-- name: SearchIngredient :many
+const searchIngredients = `-- name: SearchIngredients :many
 SELECT id, name, default_unit from ingredients
 WHERE name LIKE $1
 `
 
-type SearchIngredientRow struct {
+type SearchIngredientsRow struct {
 	ID          int32         `json:"id"`
 	Name        string        `json:"name"`
 	DefaultUnit sql.NullInt32 `json:"defaultUnit"`
 }
 
-func (q *Queries) SearchIngredient(ctx context.Context, name string) ([]SearchIngredientRow, error) {
-	rows, err := q.db.QueryContext(ctx, searchIngredient, name)
+func (q *Queries) SearchIngredients(ctx context.Context, name string) ([]SearchIngredientsRow, error) {
+	rows, err := q.db.QueryContext(ctx, searchIngredients, name)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []SearchIngredientRow
+	var items []SearchIngredientsRow
 	for rows.Next() {
-		var i SearchIngredientRow
+		var i SearchIngredientsRow
 		if err := rows.Scan(&i.ID, &i.Name, &i.DefaultUnit); err != nil {
 			return nil, err
 		}

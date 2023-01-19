@@ -2,7 +2,7 @@
 SELECT * from schedules
 WHERE id = $1 LIMIT 1;
 
--- name: ListSchedule :many
+-- name: ListSchedules :many
 SELECT * from schedules
 WHERE author = $1
 ORDER BY created_at
@@ -36,3 +36,14 @@ WHERE id = $1;
 -- name: DeleteScheduleRecipe :exec
 DELETE FROM schedules_recipes
 WHERE schedule_id = $1 AND recipe_id = $2;
+
+-- name: ListGroceries :many
+SELECT ingredients.id, ingredients.name
+FROM ingredients
+INNER JOIN recipes_ingredients
+ON ingredients.id = recipes_ingedients.ingredient_id
+INNER JOIN schedules_recipes
+ON recipes_ingredients.recipe_id = schedules_recipes.recipe_id
+WHERE schedules_recipes.schedule_id = $1
+GROUP BY ingredients.id
+ORDER BY ingredients.name;

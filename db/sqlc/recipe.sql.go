@@ -209,13 +209,62 @@ func (q *Queries) ListRecipes(ctx context.Context, arg ListRecipesParams) ([]Rec
 	return items, nil
 }
 
-const updateRecipe = `-- name: UpdateRecipe :exec
+const searchRecipe = `-- name: SearchRecipe :many
+SELECT id, name, author, modified_at from recipes
+WHERE name LIKE $1
+LIMIT $2
+OFFSET $3
+`
+
+type SearchRecipeParams struct {
+	Name   string `json:"name"`
+	Limit  int32  `json:"limit"`
+	Offset int32  `json:"offset"`
+}
+
+type SearchRecipeRow struct {
+	ID         int64     `json:"id"`
+	Name       string    `json:"name"`
+	Author     uuid.UUID `json:"author"`
+	ModifiedAt time.Time `json:"modifiedAt"`
+}
+
+func (q *Queries) SearchRecipe(ctx context.Context, arg SearchRecipeParams) ([]SearchRecipeRow, error) {
+	rows, err := q.db.QueryContext(ctx, searchRecipe, arg.Name, arg.Limit, arg.Offset)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []SearchRecipeRow
+	for rows.Next() {
+		var i SearchRecipeRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Name,
+			&i.Author,
+			&i.ModifiedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const updateRecipe = `-- name: UpdateRecipe :one
 UPDATE recipes
     set name = $2,
     portion = $3,
     steps = $4,
     modified_at = $5
 WHERE id = $1
+RETURNING id, name, author, portion, steps, created_at, modified_at
 `
 
 type UpdateRecipeParams struct {
@@ -226,22 +275,33 @@ type UpdateRecipeParams struct {
 	ModifiedAt time.Time      `json:"modifiedAt"`
 }
 
-func (q *Queries) UpdateRecipe(ctx context.Context, arg UpdateRecipeParams) error {
-	_, err := q.db.ExecContext(ctx, updateRecipe,
+func (q *Queries) UpdateRecipe(ctx context.Context, arg UpdateRecipeParams) (Recipe, error) {
+	row := q.db.QueryRowContext(ctx, updateRecipe,
 		arg.ID,
 		arg.Name,
 		arg.Portion,
 		arg.Steps,
 		arg.ModifiedAt,
 	)
-	return err
+	var i Recipe
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.Author,
+		&i.Portion,
+		&i.Steps,
+		&i.CreatedAt,
+		&i.ModifiedAt,
+	)
+	return i, err
 }
 
-const updateRecipeIngredient = `-- name: UpdateRecipeIngredient :exec
+const updateRecipeIngredient = `-- name: UpdateRecipeIngredient :one
 UPDATE recipes_ingredients
     set amount = $3,
     unit_id = $4
 WHERE recipe_id = $1 AND ingredient_id = $2
+RETURNING ingredient_id, recipe_id, amount, unit_id
 `
 
 type UpdateRecipeIngredientParams struct {
@@ -251,12 +311,19 @@ type UpdateRecipeIngredientParams struct {
 	UnitID       int32   `json:"unitID"`
 }
 
-func (q *Queries) UpdateRecipeIngredient(ctx context.Context, arg UpdateRecipeIngredientParams) error {
-	_, err := q.db.ExecContext(ctx, updateRecipeIngredient,
+func (q *Queries) UpdateRecipeIngredient(ctx context.Context, arg UpdateRecipeIngredientParams) (RecipesIngredient, error) {
+	row := q.db.QueryRowContext(ctx, updateRecipeIngredient,
 		arg.RecipeID,
 		arg.IngredientID,
 		arg.Amount,
 		arg.UnitID,
 	)
-	return err
+	var i RecipesIngredient
+	err := row.Scan(
+		&i.IngredientID,
+		&i.RecipeID,
+		&i.Amount,
+		&i.UnitID,
+	)
+	return i, err
 }

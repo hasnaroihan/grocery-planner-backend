@@ -34,12 +34,24 @@ func (q *Queries) DeleteUnit(ctx context.Context, id int32) error {
 	return err
 }
 
-const listUnit = `-- name: ListUnit :many
+const getUnit = `-- name: GetUnit :one
+SELECT id, name from units
+WHERE id = $1
+`
+
+func (q *Queries) GetUnit(ctx context.Context, id int32) (Unit, error) {
+	row := q.db.QueryRowContext(ctx, getUnit, id)
+	var i Unit
+	err := row.Scan(&i.ID, &i.Name)
+	return i, err
+}
+
+const listUnits = `-- name: ListUnits :many
 SELECT id, name from units
 `
 
-func (q *Queries) ListUnit(ctx context.Context) ([]Unit, error) {
-	rows, err := q.db.QueryContext(ctx, listUnit)
+func (q *Queries) ListUnits(ctx context.Context) ([]Unit, error) {
+	rows, err := q.db.QueryContext(ctx, listUnits)
 	if err != nil {
 		return nil, err
 	}
@@ -61,10 +73,11 @@ func (q *Queries) ListUnit(ctx context.Context) ([]Unit, error) {
 	return items, nil
 }
 
-const updateUnit = `-- name: UpdateUnit :exec
+const updateUnit = `-- name: UpdateUnit :one
 UPDATE units
     set name = $2
 WHERE id = $1
+RETURNING id, name
 `
 
 type UpdateUnitParams struct {
@@ -72,7 +85,9 @@ type UpdateUnitParams struct {
 	Name string `json:"name"`
 }
 
-func (q *Queries) UpdateUnit(ctx context.Context, arg UpdateUnitParams) error {
-	_, err := q.db.ExecContext(ctx, updateUnit, arg.ID, arg.Name)
-	return err
+func (q *Queries) UpdateUnit(ctx context.Context, arg UpdateUnitParams) (Unit, error) {
+	row := q.db.QueryRowContext(ctx, updateUnit, arg.ID, arg.Name)
+	var i Unit
+	err := row.Scan(&i.ID, &i.Name)
+	return i, err
 }

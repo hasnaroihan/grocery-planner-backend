@@ -5,13 +5,18 @@ INSERT INTO units (
     $1
 ) RETURNING *;
 
--- name: ListUnit :many
+-- name: GetUnit :one
+SELECT * from units
+WHERE id = $1;
+
+-- name: ListUnits :many
 SELECT * from units;
 
--- name: UpdateUnit :exec
+-- name: UpdateUnit :one
 UPDATE units
     set name = $2
-WHERE id = $1;
+WHERE id = $1
+RETURNING *;
 
 -- name: DeleteUnit :exec
 DELETE FROM units

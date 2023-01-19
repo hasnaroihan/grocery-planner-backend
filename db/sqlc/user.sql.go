@@ -7,6 +7,7 @@ package db
 
 import (
 	"context"
+	"database/sql"
 
 	"github.com/google/uuid"
 )
@@ -123,10 +124,11 @@ func (q *Queries) ListUsers(ctx context.Context, arg ListUsersParams) ([]User, e
 	return items, nil
 }
 
-const updatePassword = `-- name: UpdatePassword :exec
+const updatePassword = `-- name: UpdatePassword :one
 UPDATE users
   set password = $2
 WHERE email = $1
+RETURNING email, password
 `
 
 type UpdatePasswordParams struct {
@@ -134,27 +136,41 @@ type UpdatePasswordParams struct {
 	Password string `json:"password"`
 }
 
-func (q *Queries) UpdatePassword(ctx context.Context, arg UpdatePasswordParams) error {
-	_, err := q.db.ExecContext(ctx, updatePassword, arg.Email, arg.Password)
-	return err
+type UpdatePasswordRow struct {
+	Email    string `json:"email"`
+	Password string `json:"password"`
+}
+
+func (q *Queries) UpdatePassword(ctx context.Context, arg UpdatePasswordParams) (UpdatePasswordRow, error) {
+	row := q.db.QueryRowContext(ctx, updatePassword, arg.Email, arg.Password)
+	var i UpdatePasswordRow
+	err := row.Scan(&i.Email, &i.Password)
+	return i, err
 }
 
 const updateUser = `-- name: UpdateUser :one
 UPDATE users
   set username = $2,
-  email = $3
+  email = $3,
+  verified_at = $4
 WHERE id = $1
 RETURNING id, username, email, password, created_at, role, verified_at
 `
 
 type UpdateUserParams struct {
-	ID       uuid.UUID `json:"id"`
-	Username string    `json:"username"`
-	Email    string    `json:"email"`
+	ID         uuid.UUID    `json:"id"`
+	Username   string       `json:"username"`
+	Email      string       `json:"email"`
+	VerifiedAt sql.NullTime `json:"verifiedAt"`
 }
 
 func (q *Queries) UpdateUser(ctx context.Context, arg UpdateUserParams) (User, error) {
-	row := q.db.QueryRowContext(ctx, updateUser, arg.ID, arg.Username, arg.Email)
+	row := q.db.QueryRowContext(ctx, updateUser,
+		arg.ID,
+		arg.Username,
+		arg.Email,
+		arg.VerifiedAt,
+	)
 	var i User
 	err := row.Scan(
 		&i.ID,

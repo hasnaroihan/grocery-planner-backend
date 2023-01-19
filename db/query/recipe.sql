@@ -12,6 +12,12 @@ ORDER BY modified_at
 LIMIT $1
 OFFSET $2;
 
+-- name: SearchRecipe :many
+SELECT id, name, author, modified_at from recipes
+WHERE name LIKE $1
+LIMIT $2
+OFFSET $3;
+
 -- name: CreateRecipe :one
 INSERT INTO recipes (
     name,
@@ -34,19 +40,21 @@ INSERT INTO recipes_ingredients (
 )
 RETURNING *;
 
--- name: UpdateRecipe :exec
+-- name: UpdateRecipe :one
 UPDATE recipes
     set name = $2,
     portion = $3,
     steps = $4,
     modified_at = $5
-WHERE id = $1;
+WHERE id = $1
+RETURNING *;
 
--- name: UpdateRecipeIngredient :exec
+-- name: UpdateRecipeIngredient :one
 UPDATE recipes_ingredients
     set amount = $3,
     unit_id = $4
-WHERE recipe_id = $1 AND ingredient_id = $2;
+WHERE recipe_id = $1 AND ingredient_id = $2
+RETURNING *;
 
 -- name: DeleteRecipe :exec
 DELETE FROM recipes

@@ -22,14 +22,16 @@ RETURNING *;
 -- name: UpdateUser :one
 UPDATE users
   set username = $2,
-  email = $3
+  email = $3,
+  verified_at = $4
 WHERE id = $1
 RETURNING *;
 
--- name: UpdatePassword :exec
+-- name: UpdatePassword :one
 UPDATE users
   set password = $2
-WHERE email = $1;
+WHERE email = $1
+RETURNING email, password;
 
 -- name: DeleteUser :exec
 DELETE FROM users
