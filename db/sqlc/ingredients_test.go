@@ -156,7 +156,7 @@ func TestSearchIngredients(t *testing.T) {
 
 	for _,row := range ingredients {
 		require.NotEmpty(t, row)
-		require.Regexp(t, regexp.MustCompile("daging"), row)
+		require.Regexp(t, regexp.MustCompile("daging"), row.Name)
 	}
 }
 

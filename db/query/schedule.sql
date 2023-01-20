@@ -4,10 +4,9 @@ WHERE id = $1 LIMIT 1;
 
 -- name: ListSchedules :many
 SELECT * from schedules
-WHERE author = $1
 ORDER BY created_at
-LIMIT $2
-OFFSET $3;
+LIMIT $1
+OFFSET $2;
 
 -- name: GetScheduleRecipe :many
 SELECT * from schedules_recipes
@@ -38,12 +37,12 @@ DELETE FROM schedules_recipes
 WHERE schedule_id = $1 AND recipe_id = $2;
 
 -- name: ListGroceries :many
-SELECT ingredients.id, ingredients.name
-FROM ingredients
-INNER JOIN recipes_ingredients
-ON ingredients.id = recipes_ingedients.ingredient_id
-INNER JOIN schedules_recipes
-ON recipes_ingredients.recipe_id = schedules_recipes.recipe_id
-WHERE schedules_recipes.schedule_id = $1
-GROUP BY ingredients.id
-ORDER BY ingredients.name;
+SELECT i.id, i.name
+FROM schedules_recipes AS sr
+INNER JOIN recipes_ingredients AS ri
+ON sr.recipe_id = ri.recipe_id
+INNER JOIN ingredients AS i
+ON ri.ingredient_id = i.id
+WHERE sr.schedule_id = $1
+GROUP BY i.id
+ORDER BY i.name;

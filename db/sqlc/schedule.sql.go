@@ -115,15 +115,15 @@ func (q *Queries) GetScheduleRecipe(ctx context.Context, scheduleID int64) ([]Sc
 }
 
 const listGroceries = `-- name: ListGroceries :many
-SELECT ingredients.id, ingredients.name
-FROM ingredients
-INNER JOIN recipes_ingredients
-ON ingredients.id = recipes_ingedients.ingredient_id
-INNER JOIN schedules_recipes
-ON recipes_ingredients.recipe_id = schedules_recipes.recipe_id
-WHERE schedules_recipes.schedule_id = $1
-GROUP BY ingredients.id
-ORDER BY ingredients.name
+SELECT i.id, i.name
+FROM schedules_recipes AS sr
+INNER JOIN recipes_ingredients AS ri
+ON sr.recipe_id = ri.recipe_id
+INNER JOIN ingredients AS i
+ON ri.ingredient_id = i.id
+WHERE sr.schedule_id = $1
+GROUP BY i.id
+ORDER BY i.name
 `
 
 type ListGroceriesRow struct {
@@ -156,20 +156,18 @@ func (q *Queries) ListGroceries(ctx context.Context, scheduleID int64) ([]ListGr
 
 const listSchedules = `-- name: ListSchedules :many
 SELECT id, author, created_at from schedules
-WHERE author = $1
 ORDER BY created_at
-LIMIT $2
-OFFSET $3
+LIMIT $1
+OFFSET $2
 `
 
 type ListSchedulesParams struct {
-	Author uuid.NullUUID `json:"author"`
-	Limit  int32         `json:"limit"`
-	Offset int32         `json:"offset"`
+	Limit  int32 `json:"limit"`
+	Offset int32 `json:"offset"`
 }
 
 func (q *Queries) ListSchedules(ctx context.Context, arg ListSchedulesParams) ([]Schedule, error) {
-	rows, err := q.db.QueryContext(ctx, listSchedules, arg.Author, arg.Limit, arg.Offset)
+	rows, err := q.db.QueryContext(ctx, listSchedules, arg.Limit, arg.Offset)
 	if err != nil {
 		return nil, err
 	}
