@@ -139,7 +139,7 @@ func (s *Storage) NewRecipeTx(ctx context.Context, arg NewRecipeParams) (NewReci
 }
 
 type scheduleRecipePortion struct {
-	RecipeID int32	`json:"recipe_id"`
+	RecipeID int64	`json:"recipe_id"`
 	Portion int32 `json:"portion"`
 }
 
@@ -150,7 +150,7 @@ type GenerateGroceriesParam struct {
 
 type GenerateGroceriesResult struct {
 	Schedule Schedule 					`json:"schedule"`
-	Recipes []SchedulesRecipe		`json:"recipes"`
+	Recipes []GetScheduleRecipeRow		`json:"recipes"`
 	Groceries []ListGroceriesRow		`json:"groceries"`
 }
 
@@ -167,21 +167,21 @@ func (s *Storage) GenerateGroceries (ctx context.Context, arg GenerateGroceriesP
 		}
 
 		for _,recipe := range arg.Recipes {
-			var scheduleRecipe SchedulesRecipe
-
-			scheduleRecipe, err = q.CreateScheduleRecipe(
+			_, err = q.CreateScheduleRecipe(
 				ctx,
 				CreateScheduleRecipeParams{
 					ScheduleID: result.Schedule.ID,
-					RecipeID: int64(recipe.RecipeID),
+					RecipeID: recipe.RecipeID,
 					Portion: recipe.Portion,
 				},
 			)
 			if err != nil {
 				return err
 			}
-
-			result.Recipes = append(result.Recipes, scheduleRecipe)
+		}
+		result.Recipes, err = q.GetScheduleRecipe(ctx, result.Schedule.ID)
+		if err != nil {
+			return err
 		}
 
 		result.Groceries, err = q.ListGroceries(ctx, result.Schedule.ID)

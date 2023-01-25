@@ -90,7 +90,7 @@ const getScheduleRecipe = `-- name: GetScheduleRecipe :many
 SELECT sr.schedule_id, sr.recipe_id, r.name, sr.portion
 from schedules_recipes as sr 
 INNER JOIN recipes as r
-ON sr.reciped_id = r.recipe_id
+ON sr.recipe_id = r.id
 WHERE sr.schedule_id = $1
 `
 

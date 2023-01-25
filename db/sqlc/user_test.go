@@ -17,7 +17,6 @@ func CreateRandomUser(t *testing.T) User {
 		Password: "testpassword", // Real password will be hashed
 		Role: util.RandomRole(),
 	}
-
 	user, err := testQueries.CreateUser(context.Background(), arg)
 	require.NoError(t, err)
 	require.NotEmpty(t, user)
