@@ -12,6 +12,8 @@ import (
 )
 
 var testQueries *Queries
+var testDB *sql.DB
+
 var POSTGRES_USER string
 var POSTGRES_PASSWORD string
 var HOST string
@@ -22,12 +24,13 @@ const envPath = "./../../.env"
 func TestMain(m *testing.M) {
 	InitTestConfig()
 	
-	conn, err := sql.Open(dbDriver, dbSource)
+	var err error
+	testDB, err = sql.Open(dbDriver, dbSource)
 	if err != nil {
 		log.Fatal("Cannot connect to the database", err)
 	}
 
-	testQueries = New(conn)
+	testQueries = New(testDB)
 	
 	os.Exit(m.Run())
 }

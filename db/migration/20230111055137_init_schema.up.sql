@@ -6,16 +6,14 @@ CREATE TABLE IF NOT EXISTS public.ingredients
     name character varying(100) NOT NULL,
     created_at timestamp with time zone NOT NULL DEFAULT (now()),
     default_unit integer,
-    PRIMARY KEY (id),
-    UNIQUE (id, name)
+    PRIMARY KEY (id)
 );
 
 CREATE TABLE IF NOT EXISTS public.units
 (
     id integer NOT NULL GENERATED ALWAYS AS IDENTITY ( INCREMENT 1 START 1 MINVALUE 1 ),
     name character varying(25) NOT NULL,
-    PRIMARY KEY (id),
-    UNIQUE (id, name)
+    PRIMARY KEY (id)
 );
 
 CREATE TABLE IF NOT EXISTS public.recipes
@@ -39,8 +37,7 @@ CREATE TABLE IF NOT EXISTS public.users
     created_at timestamp with time zone NOT NULL DEFAULT (now()),
     role character varying(25) NOT NULL DEFAULT 'common',
     verified_at timestamp with time zone DEFAULT null,
-    PRIMARY KEY (id),
-    UNIQUE (id, username, email)
+    PRIMARY KEY (id)
 );
 
 CREATE TABLE IF NOT EXISTS public.recipes_ingredients
@@ -75,7 +72,6 @@ ALTER TABLE IF EXISTS public.ingredients
     ON UPDATE CASCADE
     ON DELETE SET NULL
     NOT VALID;
-
 
 ALTER TABLE IF EXISTS public.recipes
     ADD CONSTRAINT fk_recipes FOREIGN KEY (author)
@@ -127,6 +123,27 @@ ALTER TABLE IF EXISTS public.schedules_recipes
     ON UPDATE CASCADE
     ON DELETE CASCADE
     NOT VALID;
+
+ALTER TABLE IF EXISTS public.ingredients
+    ADD CONSTRAINT unique_id_ig UNIQUE (id);
+
+ALTER TABLE IF EXISTS public.ingredients
+    ADD CONSTRAINT unique_name_ig UNIQUE (name);
+
+ALTER TABLE IF EXISTS public.units
+    ADD CONSTRAINT unique_id_units UNIQUE (id);
+
+ALTER TABLE IF EXISTS public.units
+    ADD CONSTRAINT unique_name_units UNIQUE (name);
+
+ALTER TABLE IF EXISTS public.users
+    ADD CONSTRAINT unique_id_users UNIQUE (id);
+
+ALTER TABLE IF EXISTS public.users
+    ADD CONSTRAINT unique_name_users UNIQUE (username);
+
+ALTER TABLE IF EXISTS public.users
+    ADD CONSTRAINT unique_email_users UNIQUE (email);
 
 CREATE INDEX idx_ingredients on public.ingredients (id, name);
 CREATE INDEX idx_recipes on public.recipes (id, name);

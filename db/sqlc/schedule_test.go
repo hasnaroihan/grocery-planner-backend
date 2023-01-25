@@ -145,6 +145,7 @@ func TestGetScheduleRecipe(t *testing.T) {
 		require.Equal(t, scheduleRecipeNew.ScheduleID, row.ScheduleID)
 		require.Equal(t, scheduleRecipeNew.RecipeID, row.RecipeID)
 		require.Equal(t, scheduleRecipeNew.Portion, row.Portion)
+		require.Equal(t, recipe.Name, row.Name)
 	}
 }
 

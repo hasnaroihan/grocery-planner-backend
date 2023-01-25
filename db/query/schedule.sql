@@ -9,8 +9,11 @@ LIMIT $1
 OFFSET $2;
 
 -- name: GetScheduleRecipe :many
-SELECT * from schedules_recipes
-WHERE schedule_id = $1;
+SELECT sr.schedule_id, sr.recipe_id, r.name, sr.portion
+from schedules_recipes as sr 
+INNER JOIN recipes as r
+ON sr.reciped_id = r.recipe_id
+WHERE sr.schedule_id = $1;
 
 -- name: CreateSchedule :one
 INSERT INTO schedules (

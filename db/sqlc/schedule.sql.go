@@ -87,20 +87,35 @@ func (q *Queries) GetSchedule(ctx context.Context, id int64) (Schedule, error) {
 }
 
 const getScheduleRecipe = `-- name: GetScheduleRecipe :many
-SELECT schedule_id, recipe_id, portion from schedules_recipes
-WHERE schedule_id = $1
+SELECT sr.schedule_id, sr.recipe_id, r.name, sr.portion
+from schedules_recipes as sr 
+INNER JOIN recipes as r
+ON sr.reciped_id = r.recipe_id
+WHERE sr.schedule_id = $1
 `
 
-func (q *Queries) GetScheduleRecipe(ctx context.Context, scheduleID int64) ([]SchedulesRecipe, error) {
+type GetScheduleRecipeRow struct {
+	ScheduleID int64  `json:"scheduleID"`
+	RecipeID   int64  `json:"recipeID"`
+	Name       string `json:"name"`
+	Portion    int32  `json:"portion"`
+}
+
+func (q *Queries) GetScheduleRecipe(ctx context.Context, scheduleID int64) ([]GetScheduleRecipeRow, error) {
 	rows, err := q.db.QueryContext(ctx, getScheduleRecipe, scheduleID)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []SchedulesRecipe
+	var items []GetScheduleRecipeRow
 	for rows.Next() {
-		var i SchedulesRecipe
-		if err := rows.Scan(&i.ScheduleID, &i.RecipeID, &i.Portion); err != nil {
+		var i GetScheduleRecipeRow
+		if err := rows.Scan(
+			&i.ScheduleID,
+			&i.RecipeID,
+			&i.Name,
+			&i.Portion,
+		); err != nil {
 			return nil, err
 		}
 		items = append(items, i)
