@@ -105,8 +105,14 @@ func (s *Storage) NewRecipeTx(ctx context.Context, arg NewRecipeParams) (NewReci
 						},
 					},
 				)
-				if err != nil {
+				if err != nil && err != sql.ErrNoRows {
 					return err
+				}
+				if err == sql.ErrNoRows {
+					ingredient, err = q.SearchIngredientName(ctx, item.Name)
+					if err != nil {
+						return err
+					}
 				}
 			}
 

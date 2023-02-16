@@ -15,7 +15,8 @@ INSERT INTO ingredients (
     name, default_unit
 ) VALUES (
     $1, $2
-) RETURNING id, name, created_at, default_unit
+) ON CONFLICT DO NOTHING
+RETURNING id, name, created_at, default_unit
 `
 
 type CreateIngredientParams struct {
@@ -93,6 +94,24 @@ func (q *Queries) ListIngredients(ctx context.Context) ([]Ingredient, error) {
 		return nil, err
 	}
 	return items, nil
+}
+
+const searchIngredientName = `-- name: SearchIngredientName :one
+SELECT id, name, created_at, default_unit from ingredients
+WHERE name LIKE $1
+FOR SHARE
+`
+
+func (q *Queries) SearchIngredientName(ctx context.Context, name string) (Ingredient, error) {
+	row := q.db.QueryRowContext(ctx, searchIngredientName, name)
+	var i Ingredient
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.CreatedAt,
+		&i.DefaultUnit,
+	)
+	return i, err
 }
 
 const searchIngredients = `-- name: SearchIngredients :many
