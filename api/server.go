@@ -18,7 +18,13 @@ func NewServer(storage *db.Storage) *Server {
 	router := gin.Default()
 
 	// add routes to the router
+	// USER (postponed until i understand how to implement hash, salt, and auth)
 	router.POST("/register", server.registerUser)
+	//router.POST("/login", server.loginUser)
+
+	// INGREDIENTS
+	router.POST("/ingredients/add", server.createIngredient)
+	router.DELETE("/ingredients/delete/:id", server.deleteIngredient)
 
 	server.router = router
 
