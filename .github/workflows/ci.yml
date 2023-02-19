@@ -23,9 +23,10 @@ jobs:
         image: postgres:15.1-alpine
         # Provide the password for postgres
         env:
-          POSTGRES_USER: ${{secrets.POSTGRES_USER}}
-          POSTGRES_PASSWORD: ${{secrets.POSTGRES_PASSWORD}}
-          POSTGRES_DB: grocery_planner
+          POSTGRES_USER: ${{ secrets.POSTGRES_USER }}
+          POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+          POSTGRES_DB: grocery-planner
+          HOST: ${{ vars.HOST }}
         ports:
           # Maps tcp port 5432 on service container to the host
           - 5432:5432
