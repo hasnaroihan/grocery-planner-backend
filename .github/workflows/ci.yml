@@ -52,8 +52,8 @@ jobs:
         which migrate
     
     - name: Create env file
-        run: |
-          echo "${{ secrets.ENV_FILE }}" > .env
+      run: |
+        echo "${{ secrets.ENV_FILE }}" > .env
 
     - name: Run migrations
       run: make migrateup
