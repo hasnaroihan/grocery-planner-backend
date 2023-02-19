@@ -36,4 +36,7 @@ sqlc:
 test:
 	go test -v -cover ./...
 
-.PHONY: postgres createuser createdb dropdb dropuser migrateup migratedown runpostgres stoppostgres sqlc test
+server:
+	go run main.go
+
+.PHONY: postgres createuser createdb dropdb dropuser migrateup migratedown runpostgres stoppostgres sqlc test server
