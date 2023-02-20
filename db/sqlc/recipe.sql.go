@@ -156,7 +156,7 @@ func (q *Queries) GetRecipeIngredients(ctx context.Context, recipeID int64) ([]G
 		return nil, err
 	}
 	defer rows.Close()
-	var items []GetRecipeIngredientsRow
+	items := []GetRecipeIngredientsRow{}
 	for rows.Next() {
 		var i GetRecipeIngredientsRow
 		if err := rows.Scan(
@@ -197,7 +197,7 @@ func (q *Queries) ListRecipes(ctx context.Context, arg ListRecipesParams) ([]Rec
 		return nil, err
 	}
 	defer rows.Close()
-	var items []Recipe
+	items := []Recipe{}
 	for rows.Next() {
 		var i Recipe
 		if err := rows.Scan(
@@ -248,7 +248,7 @@ func (q *Queries) SearchRecipe(ctx context.Context, arg SearchRecipeParams) ([]S
 		return nil, err
 	}
 	defer rows.Close()
-	var items []SearchRecipeRow
+	items := []SearchRecipeRow{}
 	for rows.Next() {
 		var i SearchRecipeRow
 		if err := rows.Scan(

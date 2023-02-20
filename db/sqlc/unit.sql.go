@@ -56,7 +56,7 @@ func (q *Queries) ListUnits(ctx context.Context) ([]Unit, error) {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []Unit
+	items := []Unit{}
 	for rows.Next() {
 		var i Unit
 		if err := rows.Scan(&i.ID, &i.Name); err != nil {

@@ -107,7 +107,7 @@ func (q *Queries) GetScheduleRecipe(ctx context.Context, scheduleID int64) ([]Ge
 		return nil, err
 	}
 	defer rows.Close()
-	var items []GetScheduleRecipeRow
+	items := []GetScheduleRecipeRow{}
 	for rows.Next() {
 		var i GetScheduleRecipeRow
 		if err := rows.Scan(
@@ -152,7 +152,7 @@ func (q *Queries) ListGroceries(ctx context.Context, scheduleID int64) ([]ListGr
 		return nil, err
 	}
 	defer rows.Close()
-	var items []ListGroceriesRow
+	items := []ListGroceriesRow{}
 	for rows.Next() {
 		var i ListGroceriesRow
 		if err := rows.Scan(&i.ID, &i.Name); err != nil {
@@ -187,7 +187,7 @@ func (q *Queries) ListSchedules(ctx context.Context, arg ListSchedulesParams) ([
 		return nil, err
 	}
 	defer rows.Close()
-	var items []Schedule
+	items := []Schedule{}
 	for rows.Next() {
 		var i Schedule
 		if err := rows.Scan(&i.ID, &i.Author, &i.CreatedAt); err != nil {
