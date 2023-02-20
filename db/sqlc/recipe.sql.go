@@ -134,22 +134,35 @@ func (q *Queries) GetRecipe(ctx context.Context, id int64) (Recipe, error) {
 }
 
 const getRecipeIngredients = `-- name: GetRecipeIngredients :many
-SELECT ingredient_id, recipe_id, amount, unit_id from recipes_ingredients
+SELECT ri.recipe_id, ri.ingredient_id, i.name, ri. amount, ri.unit_id
+from recipes_ingredients as ri
+INNER JOIN ingredients as i
+ON ri.ingredient_id = i.id
 WHERE recipe_id = $1
+FOR SHARE
 `
 
-func (q *Queries) GetRecipeIngredients(ctx context.Context, recipeID int64) ([]RecipesIngredient, error) {
+type GetRecipeIngredientsRow struct {
+	RecipeID     int64   `json:"recipeID"`
+	IngredientID int32   `json:"ingredientID"`
+	Name         string  `json:"name"`
+	Amount       float32 `json:"amount"`
+	UnitID       int32   `json:"unitID"`
+}
+
+func (q *Queries) GetRecipeIngredients(ctx context.Context, recipeID int64) ([]GetRecipeIngredientsRow, error) {
 	rows, err := q.db.QueryContext(ctx, getRecipeIngredients, recipeID)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []RecipesIngredient
+	var items []GetRecipeIngredientsRow
 	for rows.Next() {
-		var i RecipesIngredient
+		var i GetRecipeIngredientsRow
 		if err := rows.Scan(
-			&i.IngredientID,
 			&i.RecipeID,
+			&i.IngredientID,
+			&i.Name,
 			&i.Amount,
 			&i.UnitID,
 		); err != nil {

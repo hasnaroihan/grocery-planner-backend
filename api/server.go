@@ -37,6 +37,15 @@ func NewServer(storage *db.Storage) *Server {
 	router.GET("/unit/all", server.listUnits)
 	router.POST("/unit/update/:id", server.updateUnit)
 
+	// RECIPES
+	router.POST("/recipe/add", server.newRecipe)
+	router.DELETE("/recipe/delete/:id", server.deleteRecipe)
+	router.DELETE("/recipe/delete", server.deleteRecipeIngredient)
+	router.GET("/recipe/:id", server.getRecipe)
+	router.GET("/recipe/all", server.listRecipes)
+	router.GET("/recipe", server.searchRecipe)
+	// (TODO) update recipe create new tx
+
 	server.router = router
 
 	return server

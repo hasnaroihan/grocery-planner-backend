@@ -3,7 +3,6 @@ package api
 import (
 	"database/sql"
 	"fmt"
-	"log"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -11,7 +10,7 @@ import (
 )
 
 type createIngredientRequest struct {
-	Name        string        `json:"name" binding:"required"`
+	Name        string        `json:"name" binding:"required,lowercase"`
 	DefaultUnit sql.NullInt32 `json:"defaultUnit"`
 }
 
@@ -92,15 +91,17 @@ func (server *Server) getIngredient(ctx *gin.Context) {
 func (server *Server) listIngredients(ctx *gin.Context) {
 	ingredients, err := server.storage.ListIngredients(ctx)
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
-		return
+		if err != sql.ErrNoRows {
+			ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+			return
+		}
 	}
 
 	ctx.JSON(http.StatusOK, ingredients)
 }
 
 type searchIngredientRequest struct {
-	Name string		`form:"name"`
+	Name string		`form:"name" binding:"omitempty,lowercase"`
 }
 
 func (server *Server) searchIngredients(ctx *gin.Context) {
@@ -111,12 +112,11 @@ func (server *Server) searchIngredients(ctx *gin.Context) {
 		return
 	}
 
-	log.Printf("name: %s", fmt.Sprintf("%%%s%%",q.Name))
-
 	ingredients, err := server.storage.SearchIngredients(ctx, fmt.Sprintf("%%%s%%",q.Name))
 	if err != nil {
 		if err != sql.ErrNoRows {
 			ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+			return
 		}
 	}
 
@@ -128,7 +128,7 @@ type updateIngredientUri struct {
 }
 
 type updateIngredientJSON struct {
-	Name        string        `json:"name" binding:"required"`
+	Name        string        `json:"name" binding:"required,lowercase"`
 	DefaultUnit sql.NullInt32 `json:"defaultUnit"`
 }
 

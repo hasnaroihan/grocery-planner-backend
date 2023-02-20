@@ -61,7 +61,7 @@ type IngredientResult struct {
 
 type NewRecipeResult struct {
 	Recipe Recipe 					`json:"recipe"`
-	Ingredients []IngredientResult 	`json:"ingredients"`
+	Ingredients []GetRecipeIngredientsRow 	`json:"ingredients"`
 }
 
 // Create recipe, create new ingredients, create recipe-ingredients
@@ -87,7 +87,7 @@ func (s *Storage) NewRecipeTx(ctx context.Context, arg NewRecipeParams) (NewReci
 		// Create ingredients for every new ingredients, and create recipe ingredients
 		for _,item := range arg.ListIngredients {
 			var ingredient Ingredient
-			var recipesIngredient RecipesIngredient
+			//var recipesIngredient RecipesIngredient
 
 			if item.ID.Valid { // Get ingredient
 				ingredient, err = q.GetIngredient(ctx, item.ID.Int32)
@@ -117,7 +117,7 @@ func (s *Storage) NewRecipeTx(ctx context.Context, arg NewRecipeParams) (NewReci
 			}
 
 			// Create recipes ingredient
-			recipesIngredient, err = q.CreateRecipeIngredient(
+			_, err = q.CreateRecipeIngredient(
 				ctx,
 				CreateRecipeIngredientParams{
 					RecipeID: result.Recipe.ID,
@@ -131,16 +131,37 @@ func (s *Storage) NewRecipeTx(ctx context.Context, arg NewRecipeParams) (NewReci
 			}
 
 			// Append ingredients to result
-			result.Ingredients = append(result.Ingredients, IngredientResult{
-				ingredient,
-				recipesIngredient.Amount,
-				recipesIngredient.UnitID,
-			})
+			result.Ingredients, err = q.GetRecipeIngredients(ctx, result.Recipe.ID)
+			if err != nil {
+				return err
+			}
 		}
 
 		return nil
 	})
 	
+	return result, err
+}
+
+func (s *Storage) GetRecipeTx(ctx context.Context, id int64) (NewRecipeResult, error) {
+	var result NewRecipeResult
+
+	err := s.execTx(ctx, func (q *Queries) error {
+		var err error
+
+		result.Recipe, err = q.GetRecipe(ctx, id)
+		if err != nil {
+			return err
+		}
+
+		result.Ingredients, err = q.GetRecipeIngredients(ctx, id)
+		if err != nil {
+			return err
+		}
+
+		return nil
+	})
+
 	return result, err
 }
 

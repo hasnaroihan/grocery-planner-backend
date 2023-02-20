@@ -193,5 +193,5 @@ func TestListGroceries(t *testing.T) {
 	require.NotEmpty(t, groceries)
 	require.Len(t, groceries, 1)
 
-	require.Equal(t, recipeIngredients.IngredientID, groceries[0].ID)
+	require.Equal(t, recipeIngredients[0].IngredientID, groceries[0].ID)
 }

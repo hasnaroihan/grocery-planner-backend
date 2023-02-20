@@ -41,7 +41,7 @@ func CreateRandomRecipe(t *testing.T) Recipe {
 	return recipe
 }
 
-func CreateRandomRecipeIngredient(t *testing.T) (Recipe, RecipesIngredient) {
+func CreateRandomRecipeIngredient(t *testing.T) (Recipe, []GetRecipeIngredientsRow) {
 	recipe := CreateRandomRecipe(t)
 	ingredient := CreateRandomIngredient(t)
 	unit := CreateRandomUnit(t)
@@ -65,7 +65,15 @@ func CreateRandomRecipeIngredient(t *testing.T) (Recipe, RecipesIngredient) {
 	require.Equal(t, arg.Amount, recipeIngredient.Amount)
 	require.Equal(t, arg.UnitID, recipeIngredient.UnitID)
 
-	return recipe, recipeIngredient
+	recipeIngredientList, err := testQueries.GetRecipeIngredients(
+		context.Background(),
+		recipe.ID,
+	)
+	require.NoError(t, err)
+	require.NotEmpty(t, recipeIngredientList)
+	require.Len(t, recipeIngredientList, 1)
+
+	return recipe, recipeIngredientList
 }
 
 func TestCreateRecipe(t *testing.T) {
@@ -144,8 +152,8 @@ func TestDeleteRecipeIngredient(t *testing.T) {
 	_, recipeIngredient := CreateRandomRecipeIngredient(t)
 
 	arg := DeleteRecipeIngredientParams {
-		IngredientID: recipeIngredient.IngredientID,
-		RecipeID: recipeIngredient.RecipeID,
+		IngredientID: recipeIngredient[0].IngredientID,
+		RecipeID: recipeIngredient[0].RecipeID,
 	}
 
 	err := testQueries.DeleteRecipeIngredient(
@@ -185,10 +193,11 @@ func TestGetRecipeIngredients(t *testing.T) {
 	require.Len(t, recipeIngredients, 1)
 	
 	for _,row := range recipeIngredients {
-		require.Equal(t, recipeIngredientsNew.IngredientID, row.IngredientID)
-		require.Equal(t, recipeIngredientsNew.RecipeID, row.RecipeID)
-		require.Equal(t, recipeIngredientsNew.Amount, row.Amount)
-		require.Equal(t, recipeIngredientsNew.UnitID, row.UnitID)
+		require.Equal(t, recipeIngredientsNew[0].IngredientID, row.IngredientID)
+		require.Equal(t, recipeIngredientsNew[0].RecipeID, row.RecipeID)
+		require.Equal(t, recipeIngredientsNew[0].Name, row.Name)
+		require.Equal(t, recipeIngredientsNew[0].Amount, row.Amount)
+		require.Equal(t, recipeIngredientsNew[0].UnitID, row.UnitID)
 	}
 }
 
@@ -309,9 +318,9 @@ func TestUpdateRecipeIngredient(t *testing.T) {
 
 	arg := UpdateRecipeIngredientParams {
 		RecipeID: recipeNew.ID,
-		IngredientID: recipeIngredientNew.IngredientID,
+		IngredientID: recipeIngredientNew[0].IngredientID,
 		Amount: 3,
-		UnitID: recipeIngredientNew.UnitID,
+		UnitID: recipeIngredientNew[0].UnitID,
 	}
 
 	recipeIngredient, err := testQueries.UpdateRecipeIngredient(
