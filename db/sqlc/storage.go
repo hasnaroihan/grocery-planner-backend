@@ -10,6 +10,8 @@ type Storage interface {
 	Querier
 	NewRecipeTx(ctx context.Context, arg NewRecipeParams) (RecipeResult, error)
 	GetRecipeTx(ctx context.Context, id int64) (RecipeResult, error)
+	UpdateRecipeTx(ctx context.Context, arg TxUpdateRecipeParams) (RecipeResult, error)
+	GenerateGroceries(ctx context.Context, arg GenerateGroceriesParam) (GenerateGroceriesResult, error)
 }
 
 type SQLStorage struct {

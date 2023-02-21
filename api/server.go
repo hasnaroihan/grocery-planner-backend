@@ -28,14 +28,14 @@ func NewServer(storage db.Storage) *Server {
 	router.GET("/ingredients/:id", server.getIngredient)
 	router.GET("/ingredients/all", server.listIngredients)
 	router.GET("/ingredients", server.searchIngredients)
-	router.POST("/ingredients/update/:id", server.updateIngredient)
+	router.PATCH("/ingredients/update/:id", server.updateIngredient)
 
 	// UNITS
 	router.POST("/unit/add", server.createUnit)
 	router.DELETE("/unit/delete/:id", server.deleteUnit)
 	router.GET("/unit/:id", server.getUnit)
 	router.GET("/unit/all", server.listUnits)
-	router.POST("/unit/update/:id", server.updateUnit)
+	router.PATCH("/unit/update/:id", server.updateUnit)
 
 	// RECIPES
 	router.POST("/recipe/add", server.newRecipe)
@@ -44,7 +44,13 @@ func NewServer(storage db.Storage) *Server {
 	router.GET("/recipe/:id", server.getRecipe)
 	router.GET("/recipe/all", server.listRecipes)
 	router.GET("/recipe", server.searchRecipe)
-	// (TODO) update recipe create new tx
+	router.PATCH("/recipe/update/:id", server.updateRecipe)
+
+	// SCHEDULES
+	router.POST("/groceries", server.generateGroceries)
+	router.GET("/schedule", server.listSchedules)
+	router.DELETE("/schedule/delete/:id", server.deleteSchedule)
+	router.DELETE("/schedule/delete", server.deleteScheduleRecipe)
 
 	server.router = router
 

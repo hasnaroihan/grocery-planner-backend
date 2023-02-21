@@ -2,6 +2,7 @@ package api
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 	"net/http"
 
@@ -128,6 +129,7 @@ type updateIngredientUri struct {
 }
 
 type updateIngredientJSON struct {
+	ID 			int32		  `json:"id" binding:"required,min=1"`
 	Name        string        `json:"name" binding:"required,lowercase"`
 	DefaultUnit sql.NullInt32 `json:"defaultUnit"`
 }
@@ -146,6 +148,11 @@ func (server *Server) updateIngredient(ctx *gin.Context) {
 		return
 	}
 
+	if reqUri.ID != reqJSON.ID {
+		ctx.JSON(http.StatusBadRequest, errorResponse(errors.New("mismatched uri and body ingredient id")))
+		return
+	}
+
 	arg := db.UpdateIngredientParams{
 		ID: reqUri.ID,
 		Name: reqJSON.Name,
@@ -153,6 +160,16 @@ func (server *Server) updateIngredient(ctx *gin.Context) {
 			Int32: reqJSON.DefaultUnit.Int32,
 			Valid: reqJSON.DefaultUnit.Valid,
 		},
+	}
+
+	_, err := server.storage.GetIngredient(ctx, arg.ID)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			ctx.JSON(http.StatusNotFound, errorResponse(err))
+			return
+		}
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
 	}
 
 	ingredient, err := server.storage.UpdateIngredient(ctx, arg)

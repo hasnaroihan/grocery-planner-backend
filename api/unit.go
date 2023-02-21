@@ -2,6 +2,7 @@ package api
 
 import (
 	"database/sql"
+	"errors"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -93,6 +94,7 @@ type updateUnitUri struct {
 }
 
 type updateUnitJSON struct {
+	ID			int32		  `json:"id" binding:"required,min=1"`
 	Name        string        `json:"name" binding:"required"`
 	DefaultUnit sql.NullInt32 `json:"defaultUnit"`
 }
@@ -111,9 +113,24 @@ func (server *Server) updateUnit(ctx *gin.Context) {
 		return
 	}
 
+	if reqUri.ID != reqJSON.ID {
+		ctx.JSON(http.StatusBadRequest, errorResponse(errors.New("mismatched uri and body ingredient id")))
+		return
+	}
+
 	arg := db.UpdateUnitParams{
 		ID: reqUri.ID,
 		Name: reqJSON.Name,
+	}
+
+	_, err := server.storage.GetUnit(ctx, arg.ID)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			ctx.JSON(http.StatusNotFound, errorResponse(err))
+			return
+		}
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
 	}
 
 	unit, err := server.storage.UpdateUnit(ctx, arg)

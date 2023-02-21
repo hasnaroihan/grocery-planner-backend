@@ -6,14 +6,14 @@ import (
 	"github.com/google/uuid"
 )
 
-type scheduleRecipePortion struct {
+type ScheduleRecipePortion struct {
 	RecipeID int64 `json:"recipe_id"`
 	Portion  int32 `json:"portion"`
 }
 
 type GenerateGroceriesParam struct {
 	Author  uuid.NullUUID           `json:"author"`
-	Recipes []scheduleRecipePortion `json:"recipes"`
+	Recipes []ScheduleRecipePortion `json:"recipes"`
 }
 
 type GenerateGroceriesResult struct {

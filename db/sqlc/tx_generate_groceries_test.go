@@ -28,7 +28,7 @@ func TestGenerateGroceries(t *testing.T) {
 		recipes = append(recipes, recipe)
 		recipeIngredients = append(recipeIngredients, recipeIngredient...)
 
-		arg.Recipes = append(arg.Recipes, scheduleRecipePortion{
+		arg.Recipes = append(arg.Recipes, ScheduleRecipePortion{
 			RecipeID: int64(recipe.ID),
 			Portion:  int32(util.RandomInt(1, 5)),
 		})
@@ -58,7 +58,7 @@ func TestGenerateGroceries(t *testing.T) {
 
 	for _, row := range result.Recipes {
 		idx := slices.IndexFunc(recipes, func(r Recipe) bool { return r.ID == row.RecipeID })
-		idx2 := slices.IndexFunc(arg.Recipes, func(r scheduleRecipePortion) bool { return r.RecipeID == row.RecipeID })
+		idx2 := slices.IndexFunc(arg.Recipes, func(r ScheduleRecipePortion) bool { return r.RecipeID == row.RecipeID })
 		require.NotNil(t, idx)
 		require.Equal(t, recipes[idx].Name, row.Name)
 		require.Equal(t, arg.Recipes[idx2].Portion, row.Portion)
