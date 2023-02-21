@@ -3,6 +3,7 @@ package db
 import (
 	"context"
 	"database/sql"
+	"log"
 )
 
 type TxUpdateRecipeParams struct {
@@ -10,6 +11,7 @@ type TxUpdateRecipeParams struct {
 	ListIngredients []ListIngredientParam	`json:"ingredients"`
 }
 
+// Update recipe does not delete recipe_ingredients, it only update recipe details, recipe ingredient details, or create new recipe ingredients
 func (s *SQLStorage) UpdateRecipeTx(ctx context.Context, arg TxUpdateRecipeParams) (RecipeResult, error) {
 	var result RecipeResult
 
@@ -18,17 +20,25 @@ func (s *SQLStorage) UpdateRecipeTx(ctx context.Context, arg TxUpdateRecipeParam
 
 		result.Recipe, err = q.UpdateRecipe(ctx, arg.Recipe)
 		if err != nil {
+			log.Print("update recipe")
 			return err
 		}
 
 		for _, item := range arg.ListIngredients {
-			var update UpdateRecipeIngredientParams
-
-			if item.ID.Valid {
-				update.RecipeID = result.Recipe.ID
-				update.IngredientID = item.ID.Int32
-				update.Amount = item.Amount
-				update.UnitID = item.UnitID
+			if item.ID.Int32 > 0 {
+				_, err = q.UpdateRecipeIngredient(
+					ctx,
+					UpdateRecipeIngredientParams{
+						RecipeID: result.Recipe.ID,
+						IngredientID: item.ID.Int32,
+						Amount: item.Amount,
+						UnitID: item.UnitID,
+					},
+				)
+				if err != nil {
+					log.Print("update recipe ingredient")
+					return err
+				}
 			} else {
 				ingredient, err := q.CreateIngredient(
 					ctx,
@@ -42,29 +52,34 @@ func (s *SQLStorage) UpdateRecipeTx(ctx context.Context, arg TxUpdateRecipeParam
 				)
 
 				if err != nil && err != sql.ErrNoRows {
+					log.Print("create ingredient")
 					return err
 				}
 				if err == sql.ErrNoRows {
 					ingredient, err = q.SearchIngredientName(ctx, item.Name)
 					if err != nil {
+						log.Print("search ingredient")
 						return err
 					}
 				}
-
-				update.RecipeID = result.Recipe.ID
-				update.IngredientID = ingredient.ID
-				update.Amount = item.Amount
-				update.UnitID = item.UnitID
-			}
-
-			_, err = q.UpdateRecipeIngredient(ctx, update)
-			if err != nil {
-				return err
+				_, err = q.CreateRecipeIngredient(
+					ctx,
+					CreateRecipeIngredientParams{
+						IngredientID: ingredient.ID,
+						RecipeID: result.Recipe.ID,
+						Amount: item.Amount,
+						UnitID: item.UnitID,
+					})
+				if err != nil {
+					log.Print("create recipe ingredient")
+					return err
+				}
 			}
 		}
 
 		result.Ingredients, err = q.GetRecipeIngredients(ctx, result.Recipe.ID)
 		if err != nil {
+			log.Print("get recipe ingredients")
 			return err
 		}
 

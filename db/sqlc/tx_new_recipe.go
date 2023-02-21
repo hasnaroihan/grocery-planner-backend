@@ -56,7 +56,7 @@ func (s *SQLStorage) NewRecipeTx(ctx context.Context, arg NewRecipeParams) (Reci
 		for _, item := range arg.ListIngredients {
 			var create CreateRecipeIngredientParams
 
-			if item.ID.Valid { // Get ingredient
+			if item.ID.Int32 > 0 { // Get ingredient
 				create.RecipeID = result.Recipe.ID
 				create.IngredientID = item.ID.Int32
 				create.Amount = item.Amount
