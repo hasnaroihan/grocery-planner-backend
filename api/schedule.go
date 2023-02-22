@@ -35,13 +35,8 @@ func (server *Server) generateGroceries(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, groceries)
 }
 
-type listSchedulesRequest struct {
-	PageSize  int32 `form:"pageSize" binding:"required,number"`
-	PageNum int32 `form:"pageNum" binding:"required,number"`
-}
-
 func (server *Server) listSchedules(ctx *gin.Context) {
-	var req listSchedulesRequest
+	var req listPageRequest
 	
 	if err := ctx.ShouldBindQuery(&req); err != nil {
 		ctx.JSON(http.StatusBadRequest, errorResponse(err))

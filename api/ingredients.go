@@ -162,18 +162,11 @@ func (server *Server) updateIngredient(ctx *gin.Context) {
 		},
 	}
 
-	_, err := server.storage.GetIngredient(ctx, arg.ID)
+	ingredient, err := server.storage.UpdateIngredient(ctx, arg)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			ctx.JSON(http.StatusNotFound, errorResponse(err))
-			return
 		}
-		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
-		return
-	}
-
-	ingredient, err := server.storage.UpdateIngredient(ctx, arg)
-	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 		return
 	}

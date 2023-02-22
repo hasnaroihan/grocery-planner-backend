@@ -123,13 +123,13 @@ func (server *Server) getRecipe(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, recipe)
 }
 
-type listRecipesRequest struct {
+type listPageRequest struct {
 	PageSize  int32 `form:"pageSize" binding:"required,number"`
 	PageNum int32 `form:"pageNum" binding:"required,number"`
 }
 
 func (server *Server) listRecipes(ctx *gin.Context) {
-	var req listRecipesRequest
+	var req listPageRequest
 	
 	if err := ctx.ShouldBindQuery(&req); err != nil {
 		ctx.JSON(http.StatusBadRequest, errorResponse(err))
@@ -190,7 +190,6 @@ type updateRecipeJSON struct {
 	Name            string                   `json:"name" binding:"required"`
 	Portion         int32                    `json:"portion" binding:"required,number,min=1"`
 	Steps           sql.NullString           `json:"steps" binding:"required,alpha"`
-	ModifiedAt		time.Time				 `json:"modifiedAt" binding:"required,lte"`
 	ListIngredients []db.ListIngredientParam `json:"ingredients" binding:"required,structonly,min=1"`
 }
 
@@ -219,7 +218,7 @@ func (server *Server) updateRecipe(ctx *gin.Context) {
 			Name: reqJSON.Name,
 			Portion: reqJSON.Portion,
 			Steps: reqJSON.Steps,
-			ModifiedAt: reqJSON.ModifiedAt,
+			ModifiedAt: time.Now().UTC(),
 		},
 		ListIngredients: reqJSON.ListIngredients,
 	}

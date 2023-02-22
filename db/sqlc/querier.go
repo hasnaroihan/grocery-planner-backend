@@ -26,6 +26,7 @@ type Querier interface {
 	DeleteUnit(ctx context.Context, id int32) error
 	DeleteUser(ctx context.Context, id uuid.UUID) error
 	GetIngredient(ctx context.Context, id int32) (Ingredient, error)
+	GetLogin(ctx context.Context, username string) (GetLoginRow, error)
 	GetRecipe(ctx context.Context, id int64) (Recipe, error)
 	GetRecipeIngredients(ctx context.Context, recipeID int64) ([]GetRecipeIngredientsRow, error)
 	GetSchedule(ctx context.Context, id int64) (Schedule, error)
@@ -47,6 +48,7 @@ type Querier interface {
 	UpdateRecipeIngredient(ctx context.Context, arg UpdateRecipeIngredientParams) (RecipesIngredient, error)
 	UpdateUnit(ctx context.Context, arg UpdateUnitParams) (Unit, error)
 	UpdateUser(ctx context.Context, arg UpdateUserParams) (User, error)
+	UpdateVerified(ctx context.Context, arg UpdateVerifiedParams) (User, error)
 }
 
 var _ Querier = (*Queries)(nil)

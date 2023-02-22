@@ -2,6 +2,8 @@ package api
 
 import (
 	"github.com/gin-gonic/gin"
+	"github.com/gin-gonic/gin/binding"
+	"github.com/go-playground/validator/v10"
 	db "github.com/hasnaroihan/grocery-planner/db/sqlc"
 )
 
@@ -16,11 +18,19 @@ func NewServer(storage db.Storage) *Server {
 		storage: storage,
 	}
 	router := gin.Default()
+	if v, ok := binding.Validator.Engine().(*validator.Validate); ok {
+		v.RegisterValidation("username", usernameValidator)
+	}
 
 	// add routes to the router
 	// USER (postponed until i understand how to implement hash, salt, and auth)
 	router.POST("/register", server.registerUser)
-	//router.POST("/login", server.loginUser)
+	router.POST("/login", server.loginUser)
+	router.DELETE("/user/delete/:id", server.deleteUser)
+	router.GET("/user/:id", server.getUser)
+	router.GET("/user/all", server.listUsers)
+	router.PATCH("/user/update/:id", server.updateUser)
+	// TODO update verified and update password
 
 	// INGREDIENTS
 	router.POST("/ingredients/add", server.createIngredient)
@@ -48,7 +58,7 @@ func NewServer(storage db.Storage) *Server {
 
 	// SCHEDULES
 	router.POST("/groceries", server.generateGroceries)
-	router.GET("/schedule", server.listSchedules)
+	router.GET("/schedule/all", server.listSchedules)
 	router.DELETE("/schedule/delete/:id", server.deleteSchedule)
 	router.DELETE("/schedule/delete", server.deleteScheduleRecipe)
 

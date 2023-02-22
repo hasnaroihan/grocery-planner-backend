@@ -2,6 +2,11 @@
 SELECT * from users
 WHERE id = $1 LIMIT 1;
 
+-- name: GetLogin :one
+SELECT id, username, password from users
+WHERE username = $1 LIMIT 1
+FOR SHARE;
+
 -- name: ListUsers :many
 SELECT * from users
 ORDER BY username
@@ -22,8 +27,13 @@ RETURNING *;
 -- name: UpdateUser :one
 UPDATE users
   set username = $2,
-  email = $3,
-  verified_at = $4
+  email = $3
+WHERE id = $1
+RETURNING *;
+
+-- name: UpdateVerified :one
+UPDATE users
+  set verified_at = $2
 WHERE id = $1
 RETURNING *;
 
