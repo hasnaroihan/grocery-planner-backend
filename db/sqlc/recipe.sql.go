@@ -222,6 +222,51 @@ func (q *Queries) ListRecipes(ctx context.Context, arg ListRecipesParams) ([]Rec
 	return items, nil
 }
 
+const listRecipesUser = `-- name: ListRecipesUser :many
+SELECT id, name, author, portion, steps, created_at, modified_at from recipes
+WHERE author = $1
+ORDER BY modified_at
+LIMIT $2
+OFFSET $3
+`
+
+type ListRecipesUserParams struct {
+	Author uuid.UUID `json:"author"`
+	Limit  int32     `json:"limit"`
+	Offset int32     `json:"offset"`
+}
+
+func (q *Queries) ListRecipesUser(ctx context.Context, arg ListRecipesUserParams) ([]Recipe, error) {
+	rows, err := q.db.QueryContext(ctx, listRecipesUser, arg.Author, arg.Limit, arg.Offset)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []Recipe{}
+	for rows.Next() {
+		var i Recipe
+		if err := rows.Scan(
+			&i.ID,
+			&i.Name,
+			&i.Author,
+			&i.Portion,
+			&i.Steps,
+			&i.CreatedAt,
+			&i.ModifiedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const searchRecipe = `-- name: SearchRecipe :many
 SELECT id, name, author, modified_at from recipes
 WHERE name LIKE $1

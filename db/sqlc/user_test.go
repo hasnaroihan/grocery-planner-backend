@@ -105,6 +105,21 @@ func TestGetLogin(t *testing.T) {
 	require.Equal(t, userNew.VerifiedAt, user.VerifiedAt)
 }
 
+func TestGetPermission(t *testing.T) {
+	// Create User
+	userNew := CreateRandomUser(t)
+	user, err := testQueries.GetPermission(
+		context.Background(),
+		userNew.ID,
+	)
+
+	require.NoError(t, err)
+	require.NotEmpty(t, user)
+
+	require.Equal(t, userNew.Role, user.Role)
+	require.Equal(t, userNew.VerifiedAt, user.VerifiedAt)
+}
+
 func TestListUsers(t *testing.T) {
 	for i := 0; i < 10; i++ {
 		CreateRandomUser(t)

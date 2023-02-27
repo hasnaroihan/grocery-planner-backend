@@ -16,6 +16,13 @@ ORDER BY modified_at
 LIMIT $1
 OFFSET $2;
 
+-- name: ListRecipesUser :many
+SELECT * from recipes
+WHERE author = $1
+ORDER BY modified_at
+LIMIT $2
+OFFSET $3;
+
 -- name: SearchRecipe :many
 SELECT id, name, author, modified_at from recipes
 WHERE name LIKE $1

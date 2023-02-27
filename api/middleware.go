@@ -8,6 +8,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/hasnaroihan/grocery-planner/auth"
+	db "github.com/hasnaroihan/grocery-planner/db/sqlc"
 )
 
 const (
@@ -47,6 +48,23 @@ func authMiddleware(tokenMaker auth.TokenMaker) gin.HandlerFunc {
 		}
 
 		ctx.Set(authPayloadKey, payload)
+		ctx.Next()
+	}
+}
+
+func adminMiddleware(storage db.Storage) gin.HandlerFunc {
+	return func(ctx *gin.Context) {
+		authPayload := ctx.MustGet(authPayloadKey).(*auth.Payload)
+		permit, err := storage.GetPermission(ctx, authPayload.Subject)
+		if err != nil {
+			ctx.AbortWithStatusJSON(http.StatusInternalServerError, errorResponse(err))
+			return
+		}
+		if permit.Role != "admin" {
+			ctx.AbortWithStatusJSON(http.StatusForbidden, errorResponse(ErrAccessDenied))
+			return
+		}
+
 		ctx.Next()
 	}
 }

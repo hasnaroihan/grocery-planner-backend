@@ -9,14 +9,14 @@ import (
 
 type Payload struct {
 	ID			uuid.UUID	`json:"jti"`
-	Username	string		`json:"sub"`
+	Subject		uuid.UUID	`json:"sub"`
 	IssuedAt	time.Time	`json:"iat"`
 	ExpiredAt	time.Time	`json:"exp"`
 	Audience	[]string	`json:"aud"`
 	Issuer		string		`jsin:"iss"`
 }
 
-func NewPayload(username string, duration time.Duration, audiences []string) (*Payload, error) {
+func NewPayload(subject uuid.UUID, duration time.Duration, audiences []string) (*Payload, error) {
 	tokenID, err := uuid.NewRandom()
 	if err != nil {
 		return nil, err
@@ -24,13 +24,21 @@ func NewPayload(username string, duration time.Duration, audiences []string) (*P
 
 	payload := &Payload{
 		ID:			tokenID,
-		Username: 	username,
+		Subject: 	subject,
 		IssuedAt: 	time.Now(),
 		ExpiredAt: 	time.Now().Add(duration),
 		Audience:	audiences,
 	}
 
 	return payload, nil
+}
+
+func (p *Payload) Valid() error {
+	now := time.Now()
+	if now.After(p.ExpiredAt) {
+		return jwt.ErrTokenExpired
+	}
+	return nil
 }
 
 func (p *Payload) GetNotBefore() (*jwt.NumericDate, error) {
@@ -64,5 +72,5 @@ func (p *Payload) GetIssuer() (string, error) {
 }
 
 func (p *Payload) GetSubject() (string, error) {
-	return p.Username, nil
+	return p.Subject.String(), nil
 }

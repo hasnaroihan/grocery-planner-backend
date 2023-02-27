@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/google/uuid"
 )
 
 const minSecretKeySize = 32
@@ -21,8 +22,8 @@ func NewJWTToken(secretKey string) (TokenMaker, error) {
 	return &JWTMaker{secretKey: secretKey}, nil
 }
 
-func (j *JWTMaker) CreateToken(username string, duration time.Duration, audiences []string) (string, error) {
-	payload, err := NewPayload(username, duration, audiences)
+func (j *JWTMaker) CreateToken(subject uuid.UUID, duration time.Duration, audiences []string) (string, error) {
+	payload, err := NewPayload(subject, duration, audiences)
 	if err != nil {
 		return "", err
 	}

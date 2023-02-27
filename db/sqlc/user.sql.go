@@ -82,6 +82,24 @@ func (q *Queries) GetLogin(ctx context.Context, username string) (User, error) {
 	return i, err
 }
 
+const getPermission = `-- name: GetPermission :one
+SELECT role, verified_at from users
+WHERE id = $1 LIMIT 1
+FOR SHARE
+`
+
+type GetPermissionRow struct {
+	Role       string       `json:"role"`
+	VerifiedAt sql.NullTime `json:"verifiedAt"`
+}
+
+func (q *Queries) GetPermission(ctx context.Context, id uuid.UUID) (GetPermissionRow, error) {
+	row := q.db.QueryRowContext(ctx, getPermission, id)
+	var i GetPermissionRow
+	err := row.Scan(&i.Role, &i.VerifiedAt)
+	return i, err
+}
+
 const getUser = `-- name: GetUser :one
 SELECT id, username, email, password, created_at, role, verified_at from users
 WHERE id = $1 LIMIT 1

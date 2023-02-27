@@ -1,6 +1,7 @@
 package api
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"strconv"
@@ -15,6 +16,10 @@ import (
 
 var SYM_KEY string
 var ACCESS_TOKEN_DURATION time.Duration
+
+var (
+	ErrAccessDenied = errors.New("authenticated user does not have access permission")
+)
 
 type Server struct {
 	storage db.Storage
@@ -57,43 +62,46 @@ func (server *Server) Start(address string) error {
 func (server *Server) setupRouter() {
 	router := gin.Default()
 	authRouter := router.Group("/").Use(authMiddleware(server.tokenMaker))
+	adminRouter := router.Group("/").Use(authMiddleware(server.tokenMaker), adminMiddleware(server.storage))
 
-	// USER (postponed until i understand how to implement hash, salt, and auth)
+	// USER
 	router.POST("/register", server.registerUser)
 	router.POST("/login", server.loginUser)
-	authRouter.DELETE("/user/delete/:id", server.deleteUser)
+	adminRouter.DELETE("/user/delete/:id", server.deleteUser)
+	adminRouter.GET("/user/all", server.listUsers)
 	authRouter.GET("/user/:id", server.getUser)
-	authRouter.GET("/user/all", server.listUsers)
 	authRouter.PATCH("/user/update/:id", server.updateUser)
 	// TODO update verified and update password
 
 	// INGREDIENTS
-	authRouter.POST("/ingredients/add", server.createIngredient)
-	authRouter.DELETE("/ingredients/delete/:id", server.deleteIngredient)
+	adminRouter.POST("/ingredients/add", server.createIngredient)
+	adminRouter.DELETE("/ingredients/delete/:id", server.deleteIngredient)
+	adminRouter.PATCH("/ingredients/update/:id", server.updateIngredient)
 	authRouter.GET("/ingredients/:id", server.getIngredient)
-	router.GET("/ingredients/all", server.listIngredients)
-	router.GET("/ingredients", server.searchIngredients)
-	authRouter.PATCH("/ingredients/update/:id", server.updateIngredient)
+	authRouter.GET("/ingredients/all", server.listIngredients)
+	authRouter.GET("/ingredients", server.searchIngredients)
 
 	// UNITS
-	authRouter.POST("/unit/add", server.createUnit)
-	authRouter.DELETE("/unit/delete/:id", server.deleteUnit)
+	adminRouter.POST("/unit/add", server.createUnit)
+	adminRouter.DELETE("/unit/delete/:id", server.deleteUnit)
+	adminRouter.PATCH("/unit/update/:id", server.updateUnit)
 	authRouter.GET("/unit/:id", server.getUnit)
-	router.GET("/unit/all", server.listUnits)
-	authRouter.PATCH("/unit/update/:id", server.updateUnit)
+	authRouter.GET("/unit/all", server.listUnits)
 
 	// RECIPES
 	authRouter.POST("/recipe/add", server.newRecipe)
 	authRouter.DELETE("/recipe/delete/:id", server.deleteRecipe)
 	authRouter.DELETE("/recipe/delete", server.deleteRecipeIngredient)
+	authRouter.PATCH("/recipe/update/:id", server.updateRecipe)
+	router.GET("/recipe/list", server.listRecipesUser)
 	router.GET("/recipe/:id", server.getRecipe)
 	router.GET("/recipe/all", server.listRecipes)
 	router.GET("/recipe", server.searchRecipe)
-	authRouter.PATCH("/recipe/update/:id", server.updateRecipe)
 
 	// SCHEDULES
 	router.POST("/groceries", server.generateGroceries)
-	authRouter.GET("/schedule/all", server.listSchedules)
+	adminRouter.GET("/schedule/all", server.listSchedules)
+	authRouter.GET("/schedule/list", server.listSchedulesUser)
 	authRouter.DELETE("/schedule/delete/:id", server.deleteSchedule)
 	authRouter.DELETE("/schedule/delete", server.deleteScheduleRecipe)
 

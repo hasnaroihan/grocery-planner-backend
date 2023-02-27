@@ -27,6 +27,7 @@ type Querier interface {
 	DeleteUser(ctx context.Context, id uuid.UUID) error
 	GetIngredient(ctx context.Context, id int32) (Ingredient, error)
 	GetLogin(ctx context.Context, username string) (User, error)
+	GetPermission(ctx context.Context, id uuid.UUID) (GetPermissionRow, error)
 	GetRecipe(ctx context.Context, id int64) (Recipe, error)
 	GetRecipeIngredients(ctx context.Context, recipeID int64) ([]GetRecipeIngredientsRow, error)
 	GetSchedule(ctx context.Context, id int64) (Schedule, error)
@@ -36,7 +37,9 @@ type Querier interface {
 	ListGroceries(ctx context.Context, scheduleID int64) ([]ListGroceriesRow, error)
 	ListIngredients(ctx context.Context) ([]Ingredient, error)
 	ListRecipes(ctx context.Context, arg ListRecipesParams) ([]Recipe, error)
+	ListRecipesUser(ctx context.Context, arg ListRecipesUserParams) ([]Recipe, error)
 	ListSchedules(ctx context.Context, arg ListSchedulesParams) ([]Schedule, error)
+	ListSchedulesUser(ctx context.Context, arg ListSchedulesUserParams) ([]Schedule, error)
 	ListUnits(ctx context.Context) ([]Unit, error)
 	ListUsers(ctx context.Context, arg ListUsersParams) ([]User, error)
 	SearchIngredientName(ctx context.Context, name string) (Ingredient, error)

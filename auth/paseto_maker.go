@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/aead/chacha20poly1305"
+	"github.com/google/uuid"
 	"github.com/o1egl/paseto"
 )
 
@@ -21,8 +22,8 @@ func NewPASETOToken(symmetricKey string) (TokenMaker, error) {
 	return &PASETOMaker{paseto: paseto.NewV2(), symmetricKey: []byte(symmetricKey)}, nil
 }
 
-func (p *PASETOMaker) CreateToken(username string, duration time.Duration, audiences []string) (string, error) {
-	payload, err := NewPayload(username, duration, audiences)
+func (p *PASETOMaker) CreateToken(subject uuid.UUID, duration time.Duration, audiences []string) (string, error) {
+	payload, err := NewPayload(subject, duration, audiences)
 	if err != nil {
 		return "", err
 	}
@@ -37,6 +38,11 @@ func (p *PASETOMaker) CreateToken(username string, duration time.Duration, audie
 func (p *PASETOMaker) VerifyToken(token string) (*Payload, error) {
 	payload := &Payload{}
 	err := p.paseto.Decrypt(token, p.symmetricKey, payload, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	err = payload.Valid()
 	if err != nil {
 		return nil, err
 	}

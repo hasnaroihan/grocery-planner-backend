@@ -26,6 +26,25 @@ func createRandomSchedule(t *testing.T) Schedule {
 	return schedule
 }
 
+func createRandomScheduleUser(t *testing.T, ID uuid.UUID) Schedule {
+	schedule, err := testQueries.CreateSchedule(
+		context.Background(),
+		uuid.NullUUID{
+			UUID: ID,
+			Valid: true,
+		},
+	)
+	require.NoError(t, err)
+	require.NotEmpty(t, schedule)
+
+	require.NotZero(t, schedule.ID)
+	require.NotZero(t, schedule.CreatedAt)
+	require.Zero(t, schedule.Author.UUID)
+	require.False(t, schedule.Author.Valid)
+
+	return schedule
+}
+
 func TestCreateSchedule(t *testing.T) {
 	schedule, err := testQueries.CreateSchedule(
 		context.Background(),
@@ -168,6 +187,34 @@ func TestListSchedules(t *testing.T) {
 
 	for _,row := range schedule {
 		require.NotEmpty(t, row)
+	}
+}
+
+func TestListSchedulesUser(t *testing.T) {
+	user := CreateRandomUser(t)
+	for i := 0; i < 4; i++ {
+		createRandomScheduleUser(t, user.ID)
+	}
+
+	arg := ListSchedulesUserParams {
+		Author: uuid.NullUUID{
+			UUID: user.ID,
+			Valid: true,
+		},
+		Limit: 2,
+		Offset: 2,
+	}
+	schedule, err := testQueries.ListSchedulesUser(
+		context.Background(),
+		arg,
+	)
+	require.NoError(t, err)
+	require.NotEmpty(t, schedule)
+	require.Len(t, schedule, int(arg.Limit))
+
+	for _,row := range schedule {
+		require.NotEmpty(t, row)
+		require.Equal(t, user.ID, arg.Author.UUID)
 	}
 }
 

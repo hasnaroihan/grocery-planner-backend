@@ -7,6 +7,11 @@ SELECT * from users
 WHERE username = $1 LIMIT 1
 FOR SHARE;
 
+-- name: GetPermission :one
+SELECT role, verified_at from users
+WHERE id = $1 LIMIT 1
+FOR SHARE;
+
 -- name: ListUsers :many
 SELECT * from users
 ORDER BY username

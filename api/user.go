@@ -10,6 +10,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
 	"github.com/google/uuid"
+	"github.com/hasnaroihan/grocery-planner/auth"
 	db "github.com/hasnaroihan/grocery-planner/db/sqlc"
 	"github.com/hasnaroihan/grocery-planner/util"
 	"github.com/lib/pq"
@@ -116,7 +117,7 @@ func (server *Server) loginUser(ctx *gin.Context) {
 	}
 
 	accessToken, err := server.tokenMaker.CreateToken(
-		user.Username,
+		user.ID,
 		server.tokenDuration,
 		[]string{},
 	)
@@ -171,6 +172,18 @@ func (server *Server) getUser(ctx *gin.Context) {
 	var req getUserRequest
 	if err := ctx.ShouldBindUri(&req); err != nil {
 		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		return
+	}
+
+	// Check permission
+	authPayload := ctx.MustGet(authPayloadKey).(*auth.Payload)
+	permit, err := server.storage.GetPermission(ctx, authPayload.Subject)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
+	}
+	if req.ID != authPayload.Subject || permit.Role != "admin" {
+		ctx.JSON(http.StatusForbidden, errorResponse(ErrAccessDenied))
 		return
 	}
 
@@ -248,13 +261,25 @@ func (server *Server) updateUser(ctx *gin.Context) {
 		return
 	}
 
+	// Check permission
+	authPayload := ctx.MustGet(authPayloadKey).(*auth.Payload)
+	permit, err := server.storage.GetPermission(ctx, authPayload.Subject)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
+	}
+	if reqUri.ID != authPayload.Subject || permit.Role != "admin" {
+		ctx.JSON(http.StatusForbidden, errorResponse(ErrAccessDenied))
+		return
+	}
+
 	arg := db.UpdateUserParams{
 		ID: reqUri.ID,
 		Username: reqJSON.Username,
 		Email: reqJSON.Email,
 	}
 
-	ingredient, err := server.storage.UpdateUser(ctx, arg)
+	user, err := server.storage.UpdateUser(ctx, arg)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			ctx.JSON(http.StatusNotFound, errorResponse(err))
@@ -263,5 +288,5 @@ func (server *Server) updateUser(ctx *gin.Context) {
 		return
 	}
 
-	ctx.JSON(http.StatusOK, ingredient)
+	ctx.JSON(http.StatusOK, user)
 }
