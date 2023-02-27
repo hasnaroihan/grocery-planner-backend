@@ -62,21 +62,23 @@ func (q *Queries) DeleteUser(ctx context.Context, id uuid.UUID) error {
 }
 
 const getLogin = `-- name: GetLogin :one
-SELECT id, username, password from users
+SELECT id, username, email, password, created_at, role, verified_at from users
 WHERE username = $1 LIMIT 1
 FOR SHARE
 `
 
-type GetLoginRow struct {
-	ID       uuid.UUID `json:"id"`
-	Username string    `json:"username"`
-	Password string    `json:"password"`
-}
-
-func (q *Queries) GetLogin(ctx context.Context, username string) (GetLoginRow, error) {
+func (q *Queries) GetLogin(ctx context.Context, username string) (User, error) {
 	row := q.db.QueryRowContext(ctx, getLogin, username)
-	var i GetLoginRow
-	err := row.Scan(&i.ID, &i.Username, &i.Password)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.Username,
+		&i.Email,
+		&i.Password,
+		&i.CreatedAt,
+		&i.Role,
+		&i.VerifiedAt,
+	)
 	return i, err
 }
 

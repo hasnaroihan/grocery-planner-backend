@@ -87,6 +87,11 @@ type loginUserRequest struct {
 	Password string `json:"password" binding:"required,min=8"`
 }
 
+type loginUserResponse struct {
+	AccessToken string 			`json:"mice"`
+	User 		userResponse	`json:"user"`
+}
+
 func (server *Server) loginUser(ctx *gin.Context) {
 	var req loginUserRequest
 	if err := ctx.ShouldBindJSON(&req); err != nil {
@@ -110,11 +115,31 @@ func (server *Server) loginUser(ctx *gin.Context) {
 		return
 	}
 
-	ctx.JSON(http.StatusOK, user)
+	accessToken, err := server.tokenMaker.CreateToken(
+		user.Username,
+		server.tokenDuration,
+		[]string{},
+	)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
+	}
+	response := loginUserResponse{
+		AccessToken: accessToken,
+		User: userResponse{
+			ID: user.ID,
+			Username: user.Username,
+			CreatedAt: user.CreatedAt,
+			VerifiedAt: user.VerifiedAt,
+			Role: user.Role,
+		},
+	}
+
+	ctx.JSON(http.StatusOK, response)
 }
 
 type deleteUserRequest struct {
-	ID uuid.UUID	`uri:"id" binding:"required,uuid"`
+	ID uuid.UUID	`uri:"id" binding:"required,uuid4"`
 }
 
 func (server *Server) deleteUser(ctx *gin.Context) {
@@ -195,11 +220,11 @@ func (server *Server) listUsers(ctx *gin.Context) {
 }
 
 type updateUserUri struct {
-	ID uuid.UUID	`uri:"id" binding:"required,uuid"`
+	ID uuid.UUID	`uri:"id" binding:"required,uuid4"`
 }
 
 type updateUserJSON struct {
-	ID         uuid.UUID    `json:"id" binding:"required,uuid"`
+	ID         uuid.UUID    `json:"id" binding:"required,uuid4"`
 	Username   string       `json:"username" binding:"required,username"`
 	Email      string       `json:"email" binding:"required,email"`
 }

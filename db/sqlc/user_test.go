@@ -97,7 +97,12 @@ func TestGetLogin(t *testing.T) {
 
 	require.Equal(t, userNew.ID, user.ID)
 	require.Equal(t, userNew.Username, user.Username)
+	require.Equal(t, userNew.Email, user.Email)
 	require.Equal(t, userNew.Password, user.Password)
+	require.Equal(t, userNew.Role, user.Role)
+	require.WithinDuration(t, userNew.CreatedAt, user.CreatedAt, time.Second)
+
+	require.Equal(t, userNew.VerifiedAt, user.VerifiedAt)
 }
 
 func TestListUsers(t *testing.T) {

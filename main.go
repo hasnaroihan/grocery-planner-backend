@@ -15,6 +15,7 @@ import (
 var POSTGRES_USER string
 var POSTGRES_PASSWORD string
 var HOST string
+var SYM_KEY string
 var dbDriver string
 var dbSource string
 
@@ -32,7 +33,10 @@ func main() {
 	}
 
 	storage := db.NewStorage(conn)
-	server := api.NewServer(storage)
+	server, err := api.NewServer(storage)
+	if err != nil {
+		log.Fatal("Cannot create server", err)
+	}
 
 	err = server.Start(serverAddress)
 	if err != nil {
@@ -48,6 +52,7 @@ func initConfig() {
 	POSTGRES_USER = os.Getenv("POSTGRES_USER")
 	POSTGRES_PASSWORD = os.Getenv("POSTGRES_PASSWORD")
 	HOST = os.Getenv("HOST")
+	SYM_KEY = os.Getenv("SYM_KEY")
 
 	dbDriver = "postgres"
 	dbSource = fmt.Sprintf("postgresql://%s:%s@%v:5432/grocery-planner?sslmode=disable",

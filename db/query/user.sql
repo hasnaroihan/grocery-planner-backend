@@ -3,7 +3,7 @@ SELECT * from users
 WHERE id = $1 LIMIT 1;
 
 -- name: GetLogin :one
-SELECT id, username, password from users
+SELECT * from users
 WHERE username = $1 LIMIT 1
 FOR SHARE;
 

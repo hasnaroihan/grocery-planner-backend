@@ -26,7 +26,7 @@ type Querier interface {
 	DeleteUnit(ctx context.Context, id int32) error
 	DeleteUser(ctx context.Context, id uuid.UUID) error
 	GetIngredient(ctx context.Context, id int32) (Ingredient, error)
-	GetLogin(ctx context.Context, username string) (GetLoginRow, error)
+	GetLogin(ctx context.Context, username string) (User, error)
 	GetRecipe(ctx context.Context, id int64) (Recipe, error)
 	GetRecipeIngredients(ctx context.Context, recipeID int64) ([]GetRecipeIngredientsRow, error)
 	GetSchedule(ctx context.Context, id int64) (Schedule, error)
