@@ -40,6 +40,6 @@ server:
 	go run main.go
 
 mock:
-	mockgen -package mockdb -destination db/mock/storage.go github.com/hasnaroihan/grocery-planner/db/sqlc Storage
+	mockgen -package dbmock -destination db/mock/storage.go github.com/hasnaroihan/grocery-planner/db/sqlc Storage
 
 .PHONY: postgres createuser createdb dropdb dropuser migrateup migratedown runpostgres stoppostgres sqlc test server mock

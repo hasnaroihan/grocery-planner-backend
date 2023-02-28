@@ -32,7 +32,7 @@ type userResponse struct {
 }
 
 var usernameValidator validator.Func = func(fl validator.FieldLevel) bool {
-	var regex,_ = regexp.Compile(`^[\w.-_]*$`)
+	var regex, _ = regexp.Compile(`^[\w.-_]*$`)
 	username := fl.Field().String()
 
 	isMatch := regex.MatchString(username)
@@ -55,9 +55,9 @@ func (server *Server) registerUser(ctx *gin.Context) {
 
 	arg := db.CreateUserParams{
 		Username: req.Username,
-		Email: req.Email,
+		Email:    req.Email,
 		Password: hashPass,
-		Role: "common",
+		Role:     "common",
 	}
 
 	user, err := server.storage.CreateUser(ctx, arg)
@@ -71,13 +71,13 @@ func (server *Server) registerUser(ctx *gin.Context) {
 		return
 	}
 
-	response := userResponse {
-		ID: user.ID,
-		Username: user.Username,
-		Email: user.Email,
-		CreatedAt: user.CreatedAt,
+	response := userResponse{
+		ID:         user.ID,
+		Username:   user.Username,
+		Email:      user.Email,
+		CreatedAt:  user.CreatedAt,
 		VerifiedAt: user.VerifiedAt,
-		Role: user.Role,
+		Role:       user.Role,
 	}
 
 	ctx.JSON(http.StatusOK, response)
@@ -89,8 +89,8 @@ type loginUserRequest struct {
 }
 
 type loginUserResponse struct {
-	AccessToken string 			`json:"mice"`
-	User 		userResponse	`json:"user"`
+	AccessToken string       `json:"mice"`
+	User        userResponse `json:"user"`
 }
 
 func (server *Server) loginUser(ctx *gin.Context) {
@@ -128,11 +128,11 @@ func (server *Server) loginUser(ctx *gin.Context) {
 	response := loginUserResponse{
 		AccessToken: accessToken,
 		User: userResponse{
-			ID: user.ID,
-			Username: user.Username,
-			CreatedAt: user.CreatedAt,
+			ID:         user.ID,
+			Username:   user.Username,
+			CreatedAt:  user.CreatedAt,
 			VerifiedAt: user.VerifiedAt,
-			Role: user.Role,
+			Role:       user.Role,
 		},
 	}
 
@@ -140,7 +140,7 @@ func (server *Server) loginUser(ctx *gin.Context) {
 }
 
 type deleteUserRequest struct {
-	ID uuid.UUID	`uri:"id" binding:"required,uuid4"`
+	ID uuid.UUID `uri:"id" binding:"required,uuid4"`
 }
 
 func (server *Server) deleteUser(ctx *gin.Context) {
@@ -165,7 +165,7 @@ func (server *Server) deleteUser(ctx *gin.Context) {
 }
 
 type getUserRequest struct {
-	ID         uuid.UUID    `json:"id" binding:"required,uuid"`
+	ID uuid.UUID `json:"id" binding:"required,uuid"`
 }
 
 func (server *Server) getUser(ctx *gin.Context) {
@@ -197,13 +197,13 @@ func (server *Server) getUser(ctx *gin.Context) {
 		return
 	}
 
-	response := userResponse {
-		ID: user.ID,
-		Username: user.Username,
-		Email: user.Email,
-		CreatedAt: user.CreatedAt,
+	response := userResponse{
+		ID:         user.ID,
+		Username:   user.Username,
+		Email:      user.Email,
+		CreatedAt:  user.CreatedAt,
 		VerifiedAt: user.VerifiedAt,
-		Role: user.Role,
+		Role:       user.Role,
 	}
 
 	ctx.JSON(http.StatusOK, response)
@@ -211,17 +211,17 @@ func (server *Server) getUser(ctx *gin.Context) {
 
 func (server *Server) listUsers(ctx *gin.Context) {
 	var req listPageRequest
-	
+
 	if err := ctx.ShouldBindQuery(&req); err != nil {
 		ctx.JSON(http.StatusBadRequest, errorResponse(err))
 		return
 	}
 
-	arg := db.ListUsersParams {
-		Limit: req.PageSize,
+	arg := db.ListUsersParams{
+		Limit:  req.PageSize,
 		Offset: req.PageNum,
 	}
-	users, err := server.storage.ListUsers(ctx,arg)
+	users, err := server.storage.ListUsers(ctx, arg)
 	if err != nil {
 		if err != sql.ErrNoRows {
 			ctx.JSON(http.StatusInternalServerError, errorResponse(err))
@@ -233,13 +233,13 @@ func (server *Server) listUsers(ctx *gin.Context) {
 }
 
 type updateUserUri struct {
-	ID uuid.UUID	`uri:"id" binding:"required,uuid4"`
+	ID uuid.UUID `uri:"id" binding:"required,uuid4"`
 }
 
 type updateUserJSON struct {
-	ID         uuid.UUID    `json:"id" binding:"required,uuid4"`
-	Username   string       `json:"username" binding:"required,username"`
-	Email      string       `json:"email" binding:"required,email"`
+	ID       uuid.UUID `json:"id" binding:"required,uuid4"`
+	Username string    `json:"username" binding:"required,username"`
+	Email    string    `json:"email" binding:"required,email"`
 }
 
 func (server *Server) updateUser(ctx *gin.Context) {
@@ -274,9 +274,9 @@ func (server *Server) updateUser(ctx *gin.Context) {
 	}
 
 	arg := db.UpdateUserParams{
-		ID: reqUri.ID,
+		ID:       reqUri.ID,
 		Username: reqJSON.Username,
-		Email: reqJSON.Email,
+		Email:    reqJSON.Email,
 	}
 
 	user, err := server.storage.UpdateUser(ctx, arg)

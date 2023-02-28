@@ -34,7 +34,7 @@ func RandomUsername() string {
 }
 
 func RandomEmail() string {
-	email := fmt.Sprintf("%s@groceryplanner.com", RandomUsername())
+	email := fmt.Sprintf("%sa@groceryplanner.com", RandomUsername())
 
 	return email
 }
