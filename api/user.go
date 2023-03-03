@@ -3,6 +3,7 @@ package api
 import (
 	"database/sql"
 	"errors"
+	"log"
 	"net/http"
 	"regexp"
 	"time"
@@ -32,7 +33,7 @@ type userResponse struct {
 }
 
 var usernameValidator validator.Func = func(fl validator.FieldLevel) bool {
-	var regex, _ = regexp.Compile(`^[\w.-_]*$`)
+	var regex, _ = regexp.Compile(`^[\w.-]*$`)
 	username := fl.Field().String()
 
 	isMatch := regex.MatchString(username)
@@ -51,6 +52,7 @@ func (server *Server) registerUser(ctx *gin.Context) {
 	hashPass, err := util.HashPassword(req.Password)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
 	}
 
 	arg := db.CreateUserParams{
@@ -65,6 +67,7 @@ func (server *Server) registerUser(ctx *gin.Context) {
 		if pqErr, ok := err.(*pq.Error); ok {
 			if pqErr.Code.Name() == "unique_violation" {
 				ctx.JSON(http.StatusForbidden, errorResponse(err))
+				return
 			}
 		}
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
@@ -95,6 +98,7 @@ type loginUserResponse struct {
 
 func (server *Server) loginUser(ctx *gin.Context) {
 	var req loginUserRequest
+	log.Print(req.Username)
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		ctx.JSON(http.StatusBadRequest, errorResponse(err))
 		return
@@ -140,18 +144,23 @@ func (server *Server) loginUser(ctx *gin.Context) {
 }
 
 type deleteUserRequest struct {
-	ID uuid.UUID `uri:"id" binding:"required,uuid4"`
+	ID string `uri:"id" binding:"required,uuid4"`
 }
 
 func (server *Server) deleteUser(ctx *gin.Context) {
 	var req deleteUserRequest
 	if err := ctx.ShouldBindUri(&req); err != nil {
+		log.Print(err)
 		ctx.JSON(http.StatusBadRequest, errorResponse(err))
-
 		return
 	}
-
-	err := server.storage.DeleteUser(ctx, req.ID)
+	id, err := util.ConvertUUIDString(req.ID)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		return
+	}
+	
+	err = server.storage.DeleteUser(ctx, id)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			ctx.JSON(http.StatusNotFound, errorResponse(err))
@@ -219,7 +228,7 @@ func (server *Server) listUsers(ctx *gin.Context) {
 
 	arg := db.ListUsersParams{
 		Limit:  req.PageSize,
-		Offset: req.PageNum,
+		Offset: (req.PageNum-1)*req.PageSize,
 	}
 	users, err := server.storage.ListUsers(ctx, arg)
 	if err != nil {
@@ -233,11 +242,11 @@ func (server *Server) listUsers(ctx *gin.Context) {
 }
 
 type updateUserUri struct {
-	ID uuid.UUID `uri:"id" binding:"required,uuid4"`
+	ID string `uri:"id" binding:"required,uuid4"`
 }
 
 type updateUserJSON struct {
-	ID       uuid.UUID `json:"id" binding:"required,uuid4"`
+	ID       string `json:"id" binding:"required,uuid4"`
 	Username string    `json:"username" binding:"required,username"`
 	Email    string    `json:"email" binding:"required,email"`
 }
@@ -260,6 +269,11 @@ func (server *Server) updateUser(ctx *gin.Context) {
 		ctx.JSON(http.StatusBadRequest, errorResponse(errors.New("mismatched uri and body ingredient id")))
 		return
 	}
+	id, err := util.ConvertUUIDString(reqJSON.ID)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		return
+	}
 
 	// Check permission
 	authPayload := ctx.MustGet(authPayloadKey).(*auth.Payload)
@@ -268,13 +282,13 @@ func (server *Server) updateUser(ctx *gin.Context) {
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 		return
 	}
-	if reqUri.ID != authPayload.Subject || permit.Role != "admin" {
+	if id != authPayload.Subject && permit.Role != "admin" {
 		ctx.JSON(http.StatusForbidden, errorResponse(ErrAccessDenied))
 		return
 	}
 
 	arg := db.UpdateUserParams{
-		ID:       reqUri.ID,
+		ID:       id,
 		Username: reqJSON.Username,
 		Email:    reqJSON.Email,
 	}
