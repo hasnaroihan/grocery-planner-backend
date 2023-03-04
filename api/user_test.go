@@ -554,6 +554,7 @@ func TestListUsersAPI(t *testing.T) {
 
 func TestUpdateUserAPI(t *testing.T) {
 	user,_ := randomUser(t)
+	admin, _ := randomAdmin(t)
 
 	testCases := []struct {
 		name          string
@@ -583,6 +584,38 @@ func TestUpdateUserAPI(t *testing.T) {
 				Times(1).
 				Return(db.GetPermissionRow{
 					Role: "common",
+					VerifiedAt: sql.NullTime{},
+				}, nil)
+				storage.EXPECT().
+				UpdateUser(gomock.Any(), gomock.Eq(arg)).
+				Times(1).
+				Return(db.User{}, nil)
+			},
+			checkResponse: func(recorder *httptest.ResponseRecorder) {
+				require.Equal(t, http.StatusOK, recorder.Code)
+			},
+		},
+		{
+			name: "OK Admin",
+			body: gin.H{
+				"id": user.ID,
+				"username": "new_username",
+				"email": "new@grocery-planner.com",
+			},
+			setupAuth: func(t *testing.T, req *http.Request, tokenMaker auth.TokenMaker) {
+				addAuthorization(t, req, tokenMaker, authBearerType, admin.ID, time.Minute)
+			},
+			buildStubs: func(storage *dbmock.MockStorage) {
+				arg := db.UpdateUserParams{
+					ID: user.ID,
+					Username: "new_username",
+					Email: "new@grocery-planner.com",
+				}
+				storage.EXPECT().
+				GetPermission(gomock.Any(), gomock.Eq(admin.ID)).
+				Times(1).
+				Return(db.GetPermissionRow{
+					Role: "admin",
 					VerifiedAt: sql.NullTime{},
 				}, nil)
 				storage.EXPECT().
