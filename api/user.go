@@ -174,12 +174,17 @@ func (server *Server) deleteUser(ctx *gin.Context) {
 }
 
 type getUserRequest struct {
-	ID uuid.UUID `json:"id" binding:"required,uuid"`
+	ID string `uri:"id" binding:"required,uuid4"`
 }
 
 func (server *Server) getUser(ctx *gin.Context) {
 	var req getUserRequest
 	if err := ctx.ShouldBindUri(&req); err != nil {
+		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		return
+	}
+	id, err := util.ConvertUUIDString(req.ID)
+	if err != nil {
 		ctx.JSON(http.StatusBadRequest, errorResponse(err))
 		return
 	}
@@ -191,12 +196,12 @@ func (server *Server) getUser(ctx *gin.Context) {
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 		return
 	}
-	if req.ID != authPayload.Subject || permit.Role != "admin" {
+	if id != authPayload.Subject && permit.Role != "admin" {
 		ctx.JSON(http.StatusForbidden, errorResponse(ErrAccessDenied))
 		return
 	}
 
-	user, err := server.storage.GetUser(ctx, req.ID)
+	user, err := server.storage.GetUser(ctx, id)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			ctx.JSON(http.StatusNotFound, errorResponse(err))
