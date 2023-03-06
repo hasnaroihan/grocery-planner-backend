@@ -30,8 +30,7 @@ func TestMain(m *testing.M) {
 		log.Fatal("Cannot connect to the database", err)
 	}
 
-	testQueries = New(testDB)
-	
+	testQueries = New(testDB)	
 	os.Exit(m.Run())
 }
 
