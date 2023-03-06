@@ -107,7 +107,7 @@ func (q *Queries) GetScheduleRecipe(ctx context.Context, scheduleID int64) ([]Ge
 		return nil, err
 	}
 	defer rows.Close()
-	var items []GetScheduleRecipeRow
+	items := []GetScheduleRecipeRow{}
 	for rows.Next() {
 		var i GetScheduleRecipeRow
 		if err := rows.Scan(
@@ -152,7 +152,7 @@ func (q *Queries) ListGroceries(ctx context.Context, scheduleID int64) ([]ListGr
 		return nil, err
 	}
 	defer rows.Close()
-	var items []ListGroceriesRow
+	items := []ListGroceriesRow{}
 	for rows.Next() {
 		var i ListGroceriesRow
 		if err := rows.Scan(&i.ID, &i.Name); err != nil {
@@ -187,7 +187,44 @@ func (q *Queries) ListSchedules(ctx context.Context, arg ListSchedulesParams) ([
 		return nil, err
 	}
 	defer rows.Close()
-	var items []Schedule
+	items := []Schedule{}
+	for rows.Next() {
+		var i Schedule
+		if err := rows.Scan(&i.ID, &i.Author, &i.CreatedAt); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listSchedulesUser = `-- name: ListSchedulesUser :many
+SELECT id, author, created_at from schedules
+WHERE author = $1
+ORDER BY created_at
+LIMIT $2
+OFFSET $3
+`
+
+type ListSchedulesUserParams struct {
+	Author uuid.NullUUID `json:"author"`
+	Limit  int32         `json:"limit"`
+	Offset int32         `json:"offset"`
+}
+
+func (q *Queries) ListSchedulesUser(ctx context.Context, arg ListSchedulesUserParams) ([]Schedule, error) {
+	rows, err := q.db.QueryContext(ctx, listSchedulesUser, arg.Author, arg.Limit, arg.Offset)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []Schedule{}
 	for rows.Next() {
 		var i Schedule
 		if err := rows.Scan(&i.ID, &i.Author, &i.CreatedAt); err != nil {

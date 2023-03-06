@@ -8,6 +8,13 @@ ORDER BY created_at
 LIMIT $1
 OFFSET $2;
 
+-- name: ListSchedulesUser :many
+SELECT * from schedules
+WHERE author = $1
+ORDER BY created_at
+LIMIT $2
+OFFSET $3;
+
 -- name: GetScheduleRecipe :many
 SELECT sr.schedule_id, sr.recipe_id, r.name, sr.portion
 from schedules_recipes as sr 

@@ -30,11 +30,11 @@ func RandomString(n int) string {
 }
 
 func RandomUsername() string {
-	return RandomString(int(RandomInt(1,25)))
+	return RandomString(int(RandomInt(6,25)))
 }
 
 func RandomEmail() string {
-	email := fmt.Sprintf("%s@groceryplanner.com", RandomUsername())
+	email := fmt.Sprintf("%sa@groceryplanner.com", RandomUsername())
 
 	return email
 }

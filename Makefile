@@ -36,4 +36,10 @@ sqlc:
 test:
 	go test -v -cover ./...
 
-.PHONY: postgres createuser createdb dropdb dropuser migrateup migratedown runpostgres stoppostgres sqlc test
+server:
+	go run main.go
+
+mock:
+	mockgen -package dbmock -destination db/mock/storage.go github.com/hasnaroihan/grocery-planner/db/sqlc Storage
+
+.PHONY: postgres createuser createdb dropdb dropuser migrateup migratedown runpostgres stoppostgres sqlc test server mock

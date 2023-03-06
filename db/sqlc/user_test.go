@@ -11,10 +11,14 @@ import (
 )
 
 func CreateRandomUser(t *testing.T) User {
+	hashedP, err := util.HashPassword("testpassword")
+	require.NoError(t, err)
+	require.NotEmpty(t, hashedP)
+
 	arg := CreateUserParams{
 		Username: util.RandomUsername(),
 		Email: util.RandomEmail(),
-		Password: "testpassword", // Real password will be hashed
+		Password: hashedP, // Real password will be hashed
 		Role: util.RandomRole(),
 	}
 	user, err := testQueries.CreateUser(context.Background(), arg)
@@ -32,10 +36,14 @@ func CreateRandomUser(t *testing.T) User {
 	return user
 }
 func TestCreateUser(t *testing.T) {
+	hashedP, err := util.HashPassword("testpassword")
+	require.NoError(t, err)
+	require.NotEmpty(t, hashedP)
+
 	arg := CreateUserParams{
 		Username: util.RandomUsername(),
 		Email: util.RandomEmail(),
-		Password: "testpassword", // Real password will be hashed
+		Password: hashedP, // Real password will be hashed
 		Role: util.RandomRole(),
 	}
 
@@ -45,8 +53,11 @@ func TestCreateUser(t *testing.T) {
 
 	require.Equal(t, arg.Username, user.Username)
 	require.Equal(t, arg.Email, user.Email)
-	require.Equal(t, arg.Password, user.Password)
 	require.Equal(t, arg.Role, user.Role)
+
+	err = util.ComparePassword("testpassword", user.Password)
+	require.NoError(t, err)
+	require.Equal(t, arg.Password, user.Password)
 
 	require.NotZero(t, user.ID)
 	require.NotZero(t, user.CreatedAt)
@@ -70,6 +81,42 @@ func TestGetUser(t *testing.T) {
 	require.Equal(t, userNew.Role, user.Role)
 	require.WithinDuration(t, userNew.CreatedAt, user.CreatedAt, time.Second)
 
+	require.Equal(t, userNew.VerifiedAt, user.VerifiedAt)
+}
+
+func TestGetLogin(t *testing.T) {
+	// Create User
+	userNew := CreateRandomUser(t)
+	user, err := testQueries.GetLogin(
+		context.Background(),
+		userNew.Username,
+	)
+
+	require.NoError(t, err)
+	require.NotEmpty(t, user)
+
+	require.Equal(t, userNew.ID, user.ID)
+	require.Equal(t, userNew.Username, user.Username)
+	require.Equal(t, userNew.Email, user.Email)
+	require.Equal(t, userNew.Password, user.Password)
+	require.Equal(t, userNew.Role, user.Role)
+	require.WithinDuration(t, userNew.CreatedAt, user.CreatedAt, time.Second)
+
+	require.Equal(t, userNew.VerifiedAt, user.VerifiedAt)
+}
+
+func TestGetPermission(t *testing.T) {
+	// Create User
+	userNew := CreateRandomUser(t)
+	user, err := testQueries.GetPermission(
+		context.Background(),
+		userNew.ID,
+	)
+
+	require.NoError(t, err)
+	require.NotEmpty(t, user)
+
+	require.Equal(t, userNew.Role, user.Role)
 	require.Equal(t, userNew.VerifiedAt, user.VerifiedAt)
 }
 
@@ -102,10 +149,6 @@ func TestUpdateUser(t *testing.T) {
 		ID: userNew.ID,
 		Username: util.RandomUsername(),
 		Email: userNew.Email,
-		VerifiedAt: sql.NullTime{
-			Time: time.Now(),
-			Valid: true,
-		},
 	}
 
 	user, err := testQueries.UpdateUser(
@@ -118,7 +161,28 @@ func TestUpdateUser(t *testing.T) {
 	require.Equal(t, arg.ID, user.ID)
 	require.Equal(t, arg.Username, user.Username)
 	require.Equal(t, arg.Email, user.Email)
+}
+
+func TestUpdateVerified(t *testing.T) {
+	userNew := CreateRandomUser(t)
+
+	arg := UpdateVerifiedParams {
+		ID: userNew.ID,
+		VerifiedAt: sql.NullTime{
+			Time: time.Now().UTC(),
+			Valid: true,
+		},
+	}
+
+	user, err := testQueries.UpdateVerified(
+		context.Background(),
+		arg,
+	)
+	require.NoError(t, err)
+	require.NotEmpty(t, user)
+
 	require.WithinDuration(t, arg.VerifiedAt.Time, user.VerifiedAt.Time, time.Second)
+
 }
 
 func TestUpdatePassword(t *testing.T) {

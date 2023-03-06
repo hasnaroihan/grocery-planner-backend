@@ -3,14 +3,25 @@ SELECT * from recipes
 WHERE id = $1 LIMIT 1;
 
 -- name: GetRecipeIngredients :many
-SELECT * from recipes_ingredients
-WHERE recipe_id = $1;
+SELECT ri.recipe_id, ri.ingredient_id, i.name, ri. amount, ri.unit_id
+from recipes_ingredients as ri
+INNER JOIN ingredients as i
+ON ri.ingredient_id = i.id
+WHERE recipe_id = $1
+FOR SHARE;
 
 -- name: ListRecipes :many
 SELECT * from recipes
 ORDER BY modified_at
 LIMIT $1
 OFFSET $2;
+
+-- name: ListRecipesUser :many
+SELECT * from recipes
+WHERE author = $1
+ORDER BY modified_at
+LIMIT $2
+OFFSET $3;
 
 -- name: SearchRecipe :many
 SELECT id, name, author, modified_at from recipes

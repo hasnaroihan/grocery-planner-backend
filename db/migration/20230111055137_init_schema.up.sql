@@ -4,7 +4,7 @@ CREATE TABLE IF NOT EXISTS public.ingredients
 (
     id integer NOT NULL GENERATED ALWAYS AS IDENTITY ( INCREMENT 1 START 1 MINVALUE 1 MAXVALUE 9999 ),
     name character varying(100) NOT NULL,
-    created_at timestamp with time zone NOT NULL DEFAULT (now()),
+    created_at timestamp without time zone NOT NULL DEFAULT (now() at time zone 'utc'),
     default_unit integer,
     PRIMARY KEY (id)
 );
@@ -23,8 +23,8 @@ CREATE TABLE IF NOT EXISTS public.recipes
     author uuid NOT NULL,
 	portion integer NOT NULL DEFAULT 1,
     steps text DEFAULT NULL,
-    created_at timestamp with time zone NOT NULL DEFAULT (now()),
-    modified_at timestamp with time zone NOT NULL DEFAULT (now()),
+    created_at timestamp without time zone NOT NULL DEFAULT (now() at time zone 'utc'),
+    modified_at timestamp without time zone NOT NULL DEFAULT (now() at time zone 'utc'),
     PRIMARY KEY (id)
 );
 
@@ -34,9 +34,9 @@ CREATE TABLE IF NOT EXISTS public.users
     username character varying(255) NOT NULL,
     email character varying NOT NULL,
     password character varying NOT NULL,
-    created_at timestamp with time zone NOT NULL DEFAULT (now()),
+    created_at timestamp without time zone NOT NULL DEFAULT (now() at time zone 'utc'),
     role character varying(25) NOT NULL DEFAULT 'common',
-    verified_at timestamp with time zone DEFAULT null,
+    verified_at timestamp without time zone DEFAULT null,
     PRIMARY KEY (id)
 );
 

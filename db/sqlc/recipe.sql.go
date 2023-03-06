@@ -134,22 +134,35 @@ func (q *Queries) GetRecipe(ctx context.Context, id int64) (Recipe, error) {
 }
 
 const getRecipeIngredients = `-- name: GetRecipeIngredients :many
-SELECT ingredient_id, recipe_id, amount, unit_id from recipes_ingredients
+SELECT ri.recipe_id, ri.ingredient_id, i.name, ri. amount, ri.unit_id
+from recipes_ingredients as ri
+INNER JOIN ingredients as i
+ON ri.ingredient_id = i.id
 WHERE recipe_id = $1
+FOR SHARE
 `
 
-func (q *Queries) GetRecipeIngredients(ctx context.Context, recipeID int64) ([]RecipesIngredient, error) {
+type GetRecipeIngredientsRow struct {
+	RecipeID     int64   `json:"recipeID"`
+	IngredientID int32   `json:"ingredientID"`
+	Name         string  `json:"name"`
+	Amount       float32 `json:"amount"`
+	UnitID       int32   `json:"unitID"`
+}
+
+func (q *Queries) GetRecipeIngredients(ctx context.Context, recipeID int64) ([]GetRecipeIngredientsRow, error) {
 	rows, err := q.db.QueryContext(ctx, getRecipeIngredients, recipeID)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []RecipesIngredient
+	items := []GetRecipeIngredientsRow{}
 	for rows.Next() {
-		var i RecipesIngredient
+		var i GetRecipeIngredientsRow
 		if err := rows.Scan(
-			&i.IngredientID,
 			&i.RecipeID,
+			&i.IngredientID,
+			&i.Name,
 			&i.Amount,
 			&i.UnitID,
 		); err != nil {
@@ -184,7 +197,52 @@ func (q *Queries) ListRecipes(ctx context.Context, arg ListRecipesParams) ([]Rec
 		return nil, err
 	}
 	defer rows.Close()
-	var items []Recipe
+	items := []Recipe{}
+	for rows.Next() {
+		var i Recipe
+		if err := rows.Scan(
+			&i.ID,
+			&i.Name,
+			&i.Author,
+			&i.Portion,
+			&i.Steps,
+			&i.CreatedAt,
+			&i.ModifiedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listRecipesUser = `-- name: ListRecipesUser :many
+SELECT id, name, author, portion, steps, created_at, modified_at from recipes
+WHERE author = $1
+ORDER BY modified_at
+LIMIT $2
+OFFSET $3
+`
+
+type ListRecipesUserParams struct {
+	Author uuid.UUID `json:"author"`
+	Limit  int32     `json:"limit"`
+	Offset int32     `json:"offset"`
+}
+
+func (q *Queries) ListRecipesUser(ctx context.Context, arg ListRecipesUserParams) ([]Recipe, error) {
+	rows, err := q.db.QueryContext(ctx, listRecipesUser, arg.Author, arg.Limit, arg.Offset)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []Recipe{}
 	for rows.Next() {
 		var i Recipe
 		if err := rows.Scan(
@@ -235,7 +293,7 @@ func (q *Queries) SearchRecipe(ctx context.Context, arg SearchRecipeParams) ([]S
 		return nil, err
 	}
 	defer rows.Close()
-	var items []SearchRecipeRow
+	items := []SearchRecipeRow{}
 	for rows.Next() {
 		var i SearchRecipeRow
 		if err := rows.Scan(

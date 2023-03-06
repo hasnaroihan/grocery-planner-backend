@@ -61,6 +61,45 @@ func (q *Queries) DeleteUser(ctx context.Context, id uuid.UUID) error {
 	return err
 }
 
+const getLogin = `-- name: GetLogin :one
+SELECT id, username, email, password, created_at, role, verified_at from users
+WHERE username = $1 LIMIT 1
+FOR SHARE
+`
+
+func (q *Queries) GetLogin(ctx context.Context, username string) (User, error) {
+	row := q.db.QueryRowContext(ctx, getLogin, username)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.Username,
+		&i.Email,
+		&i.Password,
+		&i.CreatedAt,
+		&i.Role,
+		&i.VerifiedAt,
+	)
+	return i, err
+}
+
+const getPermission = `-- name: GetPermission :one
+SELECT role, verified_at from users
+WHERE id = $1 LIMIT 1
+FOR SHARE
+`
+
+type GetPermissionRow struct {
+	Role       string       `json:"role"`
+	VerifiedAt sql.NullTime `json:"verifiedAt"`
+}
+
+func (q *Queries) GetPermission(ctx context.Context, id uuid.UUID) (GetPermissionRow, error) {
+	row := q.db.QueryRowContext(ctx, getPermission, id)
+	var i GetPermissionRow
+	err := row.Scan(&i.Role, &i.VerifiedAt)
+	return i, err
+}
+
 const getUser = `-- name: GetUser :one
 SELECT id, username, email, password, created_at, role, verified_at from users
 WHERE id = $1 LIMIT 1
@@ -99,7 +138,7 @@ func (q *Queries) ListUsers(ctx context.Context, arg ListUsersParams) ([]User, e
 		return nil, err
 	}
 	defer rows.Close()
-	var items []User
+	items := []User{}
 	for rows.Next() {
 		var i User
 		if err := rows.Scan(
@@ -151,26 +190,46 @@ func (q *Queries) UpdatePassword(ctx context.Context, arg UpdatePasswordParams) 
 const updateUser = `-- name: UpdateUser :one
 UPDATE users
   set username = $2,
-  email = $3,
-  verified_at = $4
+  email = $3
 WHERE id = $1
 RETURNING id, username, email, password, created_at, role, verified_at
 `
 
 type UpdateUserParams struct {
-	ID         uuid.UUID    `json:"id"`
-	Username   string       `json:"username"`
-	Email      string       `json:"email"`
-	VerifiedAt sql.NullTime `json:"verifiedAt"`
+	ID       uuid.UUID `json:"id"`
+	Username string    `json:"username"`
+	Email    string    `json:"email"`
 }
 
 func (q *Queries) UpdateUser(ctx context.Context, arg UpdateUserParams) (User, error) {
-	row := q.db.QueryRowContext(ctx, updateUser,
-		arg.ID,
-		arg.Username,
-		arg.Email,
-		arg.VerifiedAt,
+	row := q.db.QueryRowContext(ctx, updateUser, arg.ID, arg.Username, arg.Email)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.Username,
+		&i.Email,
+		&i.Password,
+		&i.CreatedAt,
+		&i.Role,
+		&i.VerifiedAt,
 	)
+	return i, err
+}
+
+const updateVerified = `-- name: UpdateVerified :one
+UPDATE users
+  set verified_at = $2
+WHERE id = $1
+RETURNING id, username, email, password, created_at, role, verified_at
+`
+
+type UpdateVerifiedParams struct {
+	ID         uuid.UUID    `json:"id"`
+	VerifiedAt sql.NullTime `json:"verifiedAt"`
+}
+
+func (q *Queries) UpdateVerified(ctx context.Context, arg UpdateVerifiedParams) (User, error) {
+	row := q.db.QueryRowContext(ctx, updateVerified, arg.ID, arg.VerifiedAt)
 	var i User
 	err := row.Scan(
 		&i.ID,
