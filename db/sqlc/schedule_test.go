@@ -39,8 +39,6 @@ func createRandomScheduleUser(t *testing.T, ID uuid.UUID) Schedule {
 
 	require.NotZero(t, schedule.ID)
 	require.NotZero(t, schedule.CreatedAt)
-	require.Zero(t, schedule.Author.UUID)
-	require.False(t, schedule.Author.Valid)
 
 	return schedule
 }

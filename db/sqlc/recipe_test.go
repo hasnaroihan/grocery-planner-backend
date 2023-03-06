@@ -296,7 +296,7 @@ func TestUpdateRecipe(t *testing.T) {
 		Name: "test update resep",
 		Portion: 2,
 		Steps: sql.NullString{},
-		ModifiedAt: time.Now(),
+		ModifiedAt: time.Now().UTC(),
 	}
 
 	recipe, err := testQueries.UpdateRecipe(
