@@ -65,8 +65,8 @@ func (server *Server) registerUser(ctx *gin.Context) {
 	user, err := server.storage.CreateUser(ctx, arg)
 	if err != nil {
 		if pqErr, ok := err.(*pq.Error); ok {
-			if pqErr.Code.Name() == "unique_violation" {
-				ctx.JSON(http.StatusForbidden, errorResponse(err))
+			if pqErr.Code == "23505" {
+				ctx.JSON(http.StatusConflict, errorResponse(err))
 				return
 			}
 		}
