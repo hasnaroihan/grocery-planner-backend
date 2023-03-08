@@ -7,6 +7,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	db "github.com/hasnaroihan/grocery-planner/db/sqlc"
+	"github.com/lib/pq"
 )
 
 type createUnitRequest struct {
@@ -23,6 +24,12 @@ func (server *Server) createUnit(ctx *gin.Context) {
 
 	unit, err := server.storage.CreateUnit(ctx, req.Name)
 	if err != nil {
+		if pqErr, ok := err.(*pq.Error); ok {
+			if pqErr.Code == "23505" {
+				ctx.JSON(http.StatusConflict, errorResponse(err))
+				return
+			}
+		}
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 		return
 	}
@@ -96,7 +103,6 @@ type updateUnitUri struct {
 type updateUnitJSON struct {
 	ID			int32		  `json:"id" binding:"required,min=1"`
 	Name        string        `json:"name" binding:"required"`
-	DefaultUnit sql.NullInt32 `json:"defaultUnit"`
 }
 
 func (server *Server) updateUnit(ctx *gin.Context) {

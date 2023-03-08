@@ -16,7 +16,7 @@ type newRecipeRequest struct {
 	Name            string                   `json:"name" binding:"required"`
 	Portion         int32                    `json:"portion" binding:"required,number,min=1"`
 	Steps           sql.NullString           `json:"steps" binding:"required,alpha"`
-	ListIngredients []db.ListIngredientParam `json:"ingredients" binding:"required,structonly,min=1"`
+	ListIngredients []db.ListIngredientParam `json:"ingredients" binding:"required,min=1"`
 }
 
 func (server *Server) newRecipe(ctx *gin.Context) {
@@ -72,7 +72,7 @@ func (server *Server) deleteRecipe(ctx *gin.Context) {
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 		return
 	}
-	if recipe.Author != authPayload.Subject || permit.Role != "admin" {
+	if recipe.Author != authPayload.Subject && permit.Role != "admin" {
 		ctx.JSON(http.StatusForbidden, errorResponse(ErrAccessDenied))
 		return
 	}
@@ -120,7 +120,7 @@ func (server *Server) deleteRecipeIngredient(ctx *gin.Context) {
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 		return
 	}
-	if recipe.Author != authPayload.Subject || permit.Role != "admin" {
+	if recipe.Author != authPayload.Subject && permit.Role != "admin" {
 		ctx.JSON(http.StatusForbidden, errorResponse(ErrAccessDenied))
 		return
 	}

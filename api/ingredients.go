@@ -8,6 +8,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	db "github.com/hasnaroihan/grocery-planner/db/sqlc"
+	"github.com/lib/pq"
 )
 
 type createIngredientRequest struct {
@@ -33,6 +34,12 @@ func (server *Server) createIngredient(ctx *gin.Context) {
 
 	ingredient, err := server.storage.CreateIngredient(ctx, arg)
 	if err != nil {
+		if pqErr, ok := err.(*pq.Error); ok {
+			if pqErr.Code == "23505" {
+				ctx.JSON(http.StatusConflict, errorResponse(err))
+				return
+			}
+		}
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 		return
 	}

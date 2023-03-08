@@ -150,7 +150,7 @@ func TestRegisterAPI(t *testing.T) {
 			},
 		},
 		{
-			name: "500 Unique Violation",
+			name: "409 Unique Violation",
 			body: gin.H{
 				"username": user.Username,
 				"email":    user.Email,
