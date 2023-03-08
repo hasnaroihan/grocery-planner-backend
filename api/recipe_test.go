@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 
@@ -230,9 +231,9 @@ func TestDeleteRecipeAPI(t *testing.T) {
 			},
 			buildStubs: func(storage *dbmock.MockStorage) {
 				storage.EXPECT().
-						GetRecipe(gomock.Any(), gomock.Eq(recipe.Recipe.ID)).
-						Times(1).
-						Return(recipe.Recipe, nil)
+					GetRecipe(gomock.Any(), gomock.Eq(recipe.Recipe.ID)).
+					Times(1).
+					Return(recipe.Recipe, nil)
 				storage.EXPECT().
 					GetPermission(gomock.Any(), gomock.Eq(user.ID)).
 					Times(1).
@@ -241,9 +242,9 @@ func TestDeleteRecipeAPI(t *testing.T) {
 						VerifiedAt: sql.NullTime{},
 					}, nil)
 				storage.EXPECT().
-						DeleteRecipe(gomock.Any(), gomock.Eq(recipe.Recipe.ID)).
-						Times(1).
-						Return(nil)
+					DeleteRecipe(gomock.Any(), gomock.Eq(recipe.Recipe.ID)).
+					Times(1).
+					Return(nil)
 			},
 			checkResponse: func(recorder *httptest.ResponseRecorder) {
 				require.Equal(t, http.StatusOK, recorder.Code)
@@ -257,9 +258,9 @@ func TestDeleteRecipeAPI(t *testing.T) {
 			},
 			buildStubs: func(storage *dbmock.MockStorage) {
 				storage.EXPECT().
-						GetRecipe(gomock.Any(), gomock.Eq(recipe.Recipe.ID)).
-						Times(1).
-						Return(recipe.Recipe, nil)
+					GetRecipe(gomock.Any(), gomock.Eq(recipe.Recipe.ID)).
+					Times(1).
+					Return(recipe.Recipe, nil)
 				storage.EXPECT().
 					GetPermission(gomock.Any(), gomock.Eq(admin.ID)).
 					Times(1).
@@ -268,9 +269,9 @@ func TestDeleteRecipeAPI(t *testing.T) {
 						VerifiedAt: sql.NullTime{},
 					}, nil)
 				storage.EXPECT().
-						DeleteRecipe(gomock.Any(), gomock.Eq(recipe.Recipe.ID)).
-						Times(1).
-						Return(nil)
+					DeleteRecipe(gomock.Any(), gomock.Eq(recipe.Recipe.ID)).
+					Times(1).
+					Return(nil)
 			},
 			checkResponse: func(recorder *httptest.ResponseRecorder) {
 				require.Equal(t, http.StatusOK, recorder.Code)
@@ -280,15 +281,15 @@ func TestDeleteRecipeAPI(t *testing.T) {
 			name: "403 Forbidden",
 			uri:  recipe.Recipe.ID,
 			setupAuth: func(t *testing.T, req *http.Request, tokenMaker auth.TokenMaker) {
-				id,err := uuid.NewRandom()
-				require.NoError(t,err)
+				id, err := uuid.NewRandom()
+				require.NoError(t, err)
 				addAuthorization(t, req, tokenMaker, authBearerType, id, time.Minute)
 			},
 			buildStubs: func(storage *dbmock.MockStorage) {
 				storage.EXPECT().
-						GetRecipe(gomock.Any(), gomock.Eq(recipe.Recipe.ID)).
-						Times(1).
-						Return(recipe.Recipe, nil)
+					GetRecipe(gomock.Any(), gomock.Eq(recipe.Recipe.ID)).
+					Times(1).
+					Return(recipe.Recipe, nil)
 				storage.EXPECT().
 					GetPermission(gomock.Any(), gomock.Not(user.ID)).
 					Times(1).
@@ -297,8 +298,8 @@ func TestDeleteRecipeAPI(t *testing.T) {
 						VerifiedAt: sql.NullTime{},
 					}, nil)
 				storage.EXPECT().
-						DeleteRecipe(gomock.Any(), gomock.Eq(recipe.Recipe.ID)).
-						Times(0)
+					DeleteRecipe(gomock.Any(), gomock.Eq(recipe.Recipe.ID)).
+					Times(0)
 			},
 			checkResponse: func(recorder *httptest.ResponseRecorder) {
 				require.Equal(t, http.StatusForbidden, recorder.Code)
@@ -312,8 +313,8 @@ func TestDeleteRecipeAPI(t *testing.T) {
 			},
 			buildStubs: func(storage *dbmock.MockStorage) {
 				storage.EXPECT().
-						GetRecipe(gomock.Any(), gomock.Eq(recipe.Recipe.ID)).
-						Times(0)
+					GetRecipe(gomock.Any(), gomock.Eq(recipe.Recipe.ID)).
+					Times(0)
 				storage.EXPECT().
 					GetPermission(gomock.Any(), gomock.Eq(user.ID)).
 					Times(0)
@@ -333,9 +334,9 @@ func TestDeleteRecipeAPI(t *testing.T) {
 			},
 			buildStubs: func(storage *dbmock.MockStorage) {
 				storage.EXPECT().
-						GetRecipe(gomock.Any(), gomock.Eq(recipe.Recipe.ID)).
-						Times(1).
-						Return(db.Recipe{}, sql.ErrNoRows)
+					GetRecipe(gomock.Any(), gomock.Eq(recipe.Recipe.ID)).
+					Times(1).
+					Return(db.Recipe{}, sql.ErrNoRows)
 				storage.EXPECT().
 					GetPermission(gomock.Any(), gomock.Not(user.ID)).
 					Times(0)
@@ -355,9 +356,9 @@ func TestDeleteRecipeAPI(t *testing.T) {
 			},
 			buildStubs: func(storage *dbmock.MockStorage) {
 				storage.EXPECT().
-						GetRecipe(gomock.Any(), gomock.Eq(recipe.Recipe.ID)).
-						Times(1).
-						Return(db.Recipe{}, sql.ErrConnDone)
+					GetRecipe(gomock.Any(), gomock.Eq(recipe.Recipe.ID)).
+					Times(1).
+					Return(db.Recipe{}, sql.ErrConnDone)
 				storage.EXPECT().
 					GetPermission(gomock.Any(), gomock.Not(user.ID)).
 					Times(0)
@@ -377,9 +378,9 @@ func TestDeleteRecipeAPI(t *testing.T) {
 			},
 			buildStubs: func(storage *dbmock.MockStorage) {
 				storage.EXPECT().
-						GetRecipe(gomock.Any(), gomock.Eq(recipe.Recipe.ID)).
-						Times(1).
-						Return(recipe.Recipe, nil)
+					GetRecipe(gomock.Any(), gomock.Eq(recipe.Recipe.ID)).
+					Times(1).
+					Return(recipe.Recipe, nil)
 				storage.EXPECT().
 					GetPermission(gomock.Any(), gomock.Eq(user.ID)).
 					Times(1).
@@ -403,9 +404,9 @@ func TestDeleteRecipeAPI(t *testing.T) {
 			},
 			buildStubs: func(storage *dbmock.MockStorage) {
 				storage.EXPECT().
-						GetRecipe(gomock.Any(), gomock.Eq(recipe.Recipe.ID)).
-						Times(1).
-						Return(recipe.Recipe, nil)
+					GetRecipe(gomock.Any(), gomock.Eq(recipe.Recipe.ID)).
+					Times(1).
+					Return(recipe.Recipe, nil)
 				storage.EXPECT().
 					GetPermission(gomock.Any(), gomock.Eq(user.ID)).
 					Times(1).
@@ -436,7 +437,7 @@ func TestDeleteRecipeAPI(t *testing.T) {
 			server := newTestServer(t, storage)
 			recorder := httptest.NewRecorder()
 
-			url := fmt.Sprintf("/recipe/delete/%d",tc.uri)
+			url := fmt.Sprintf("/recipe/delete/%d", tc.uri)
 			request, err := http.NewRequest(http.MethodDelete, url, nil)
 			require.NoError(t, err)
 
@@ -461,21 +462,21 @@ func TestDeleteRecipeIngredientAPI(t *testing.T) {
 	}{
 		{
 			name: "OK User",
-			query:  fmt.Sprintf("recipeID=%d&ingredientID=%d",
-					recipe.Recipe.ID,
-					recipe.Ingredients[0].IngredientID),
+			query: fmt.Sprintf("recipeID=%d&ingredientID=%d",
+				recipe.Recipe.ID,
+				recipe.Ingredients[0].IngredientID),
 			setupAuth: func(t *testing.T, req *http.Request, tokenMaker auth.TokenMaker) {
 				addAuthorization(t, req, tokenMaker, authBearerType, user.ID, time.Minute)
 			},
 			buildStubs: func(storage *dbmock.MockStorage) {
-				arg := db.DeleteRecipeIngredientParams {
-					RecipeID: recipe.Recipe.ID,
+				arg := db.DeleteRecipeIngredientParams{
+					RecipeID:     recipe.Recipe.ID,
 					IngredientID: recipe.Ingredients[0].IngredientID,
 				}
 				storage.EXPECT().
-						GetRecipe(gomock.Any(), gomock.Eq(recipe.Recipe.ID)).
-						Times(1).
-						Return(recipe.Recipe, nil)
+					GetRecipe(gomock.Any(), gomock.Eq(recipe.Recipe.ID)).
+					Times(1).
+					Return(recipe.Recipe, nil)
 				storage.EXPECT().
 					GetPermission(gomock.Any(), gomock.Eq(user.ID)).
 					Times(1).
@@ -484,9 +485,9 @@ func TestDeleteRecipeIngredientAPI(t *testing.T) {
 						VerifiedAt: sql.NullTime{},
 					}, nil)
 				storage.EXPECT().
-						DeleteRecipeIngredient(gomock.Any(), gomock.Eq(arg)).
-						Times(1).
-						Return(nil)
+					DeleteRecipeIngredient(gomock.Any(), gomock.Eq(arg)).
+					Times(1).
+					Return(nil)
 			},
 			checkResponse: func(recorder *httptest.ResponseRecorder) {
 				require.Equal(t, http.StatusOK, recorder.Code)
@@ -494,21 +495,21 @@ func TestDeleteRecipeIngredientAPI(t *testing.T) {
 		},
 		{
 			name: "OK Admin",
-			query:  fmt.Sprintf("recipeID=%d&ingredientID=%d",
-					recipe.Recipe.ID,
-					recipe.Ingredients[0].IngredientID),
+			query: fmt.Sprintf("recipeID=%d&ingredientID=%d",
+				recipe.Recipe.ID,
+				recipe.Ingredients[0].IngredientID),
 			setupAuth: func(t *testing.T, req *http.Request, tokenMaker auth.TokenMaker) {
 				addAuthorization(t, req, tokenMaker, authBearerType, admin.ID, time.Minute)
 			},
 			buildStubs: func(storage *dbmock.MockStorage) {
-				arg := db.DeleteRecipeIngredientParams {
-					RecipeID: recipe.Recipe.ID,
+				arg := db.DeleteRecipeIngredientParams{
+					RecipeID:     recipe.Recipe.ID,
 					IngredientID: recipe.Ingredients[0].IngredientID,
 				}
 				storage.EXPECT().
-						GetRecipe(gomock.Any(), gomock.Eq(recipe.Recipe.ID)).
-						Times(1).
-						Return(recipe.Recipe, nil)
+					GetRecipe(gomock.Any(), gomock.Eq(recipe.Recipe.ID)).
+					Times(1).
+					Return(recipe.Recipe, nil)
 				storage.EXPECT().
 					GetPermission(gomock.Any(), gomock.Eq(admin.ID)).
 					Times(1).
@@ -517,9 +518,9 @@ func TestDeleteRecipeIngredientAPI(t *testing.T) {
 						VerifiedAt: sql.NullTime{},
 					}, nil)
 				storage.EXPECT().
-						DeleteRecipeIngredient(gomock.Any(), gomock.Eq(arg)).
-						Times(1).
-						Return(nil)
+					DeleteRecipeIngredient(gomock.Any(), gomock.Eq(arg)).
+					Times(1).
+					Return(nil)
 			},
 			checkResponse: func(recorder *httptest.ResponseRecorder) {
 				require.Equal(t, http.StatusOK, recorder.Code)
@@ -527,23 +528,23 @@ func TestDeleteRecipeIngredientAPI(t *testing.T) {
 		},
 		{
 			name: "403 Forbidden",
-			query:  fmt.Sprintf("recipeID=%d&ingredientID=%d",
-					recipe.Recipe.ID,
-					recipe.Ingredients[0].IngredientID),
+			query: fmt.Sprintf("recipeID=%d&ingredientID=%d",
+				recipe.Recipe.ID,
+				recipe.Ingredients[0].IngredientID),
 			setupAuth: func(t *testing.T, req *http.Request, tokenMaker auth.TokenMaker) {
-				id,err := uuid.NewRandom()
-				require.NoError(t,err)
+				id, err := uuid.NewRandom()
+				require.NoError(t, err)
 				addAuthorization(t, req, tokenMaker, authBearerType, id, time.Minute)
 			},
 			buildStubs: func(storage *dbmock.MockStorage) {
-				arg := db.DeleteRecipeIngredientParams {
-					RecipeID: recipe.Recipe.ID,
+				arg := db.DeleteRecipeIngredientParams{
+					RecipeID:     recipe.Recipe.ID,
 					IngredientID: recipe.Ingredients[0].IngredientID,
 				}
 				storage.EXPECT().
-						GetRecipe(gomock.Any(), gomock.Eq(recipe.Recipe.ID)).
-						Times(1).
-						Return(recipe.Recipe, nil)
+					GetRecipe(gomock.Any(), gomock.Eq(recipe.Recipe.ID)).
+					Times(1).
+					Return(recipe.Recipe, nil)
 				storage.EXPECT().
 					GetPermission(gomock.Any(), gomock.Not(user.ID)).
 					Times(1).
@@ -552,27 +553,27 @@ func TestDeleteRecipeIngredientAPI(t *testing.T) {
 						VerifiedAt: sql.NullTime{},
 					}, nil)
 				storage.EXPECT().
-						DeleteRecipeIngredient(gomock.Any(), gomock.Eq(arg)).
-						Times(0)
+					DeleteRecipeIngredient(gomock.Any(), gomock.Eq(arg)).
+					Times(0)
 			},
 			checkResponse: func(recorder *httptest.ResponseRecorder) {
 				require.Equal(t, http.StatusForbidden, recorder.Code)
 			},
 		},
 		{
-			name: "400 Invalid ID",
-			query:  fmt.Sprintf("recipeID=%d&ingredientID=%d", -1, -1),
+			name:  "400 Invalid ID",
+			query: fmt.Sprintf("recipeID=%d&ingredientID=%d", -1, -1),
 			setupAuth: func(t *testing.T, req *http.Request, tokenMaker auth.TokenMaker) {
 				addAuthorization(t, req, tokenMaker, authBearerType, user.ID, time.Minute)
 			},
 			buildStubs: func(storage *dbmock.MockStorage) {
-				arg := db.DeleteRecipeIngredientParams {
-					RecipeID: recipe.Recipe.ID,
+				arg := db.DeleteRecipeIngredientParams{
+					RecipeID:     recipe.Recipe.ID,
 					IngredientID: recipe.Ingredients[0].IngredientID,
 				}
 				storage.EXPECT().
-						GetRecipe(gomock.Any(), gomock.Eq(recipe.Recipe.ID)).
-						Times(0)
+					GetRecipe(gomock.Any(), gomock.Eq(recipe.Recipe.ID)).
+					Times(0)
 				storage.EXPECT().
 					GetPermission(gomock.Any(), gomock.Eq(user.ID)).
 					Times(0)
@@ -586,21 +587,21 @@ func TestDeleteRecipeIngredientAPI(t *testing.T) {
 		},
 		{
 			name: "404 Get Not Found",
-			query:  fmt.Sprintf("recipeID=%d&ingredientID=%d",
-					recipe.Recipe.ID,
-					recipe.Ingredients[0].IngredientID),
+			query: fmt.Sprintf("recipeID=%d&ingredientID=%d",
+				recipe.Recipe.ID,
+				recipe.Ingredients[0].IngredientID),
 			setupAuth: func(t *testing.T, req *http.Request, tokenMaker auth.TokenMaker) {
 				addAuthorization(t, req, tokenMaker, authBearerType, user.ID, time.Minute)
 			},
 			buildStubs: func(storage *dbmock.MockStorage) {
-				arg := db.DeleteRecipeIngredientParams {
-					RecipeID: recipe.Recipe.ID,
+				arg := db.DeleteRecipeIngredientParams{
+					RecipeID:     recipe.Recipe.ID,
 					IngredientID: recipe.Ingredients[0].IngredientID,
 				}
 				storage.EXPECT().
-						GetRecipe(gomock.Any(), gomock.Eq(recipe.Recipe.ID)).
-						Times(1).
-						Return(db.Recipe{}, sql.ErrNoRows)
+					GetRecipe(gomock.Any(), gomock.Eq(recipe.Recipe.ID)).
+					Times(1).
+					Return(db.Recipe{}, sql.ErrNoRows)
 				storage.EXPECT().
 					GetPermission(gomock.Any(), gomock.Not(user.ID)).
 					Times(0)
@@ -614,21 +615,21 @@ func TestDeleteRecipeIngredientAPI(t *testing.T) {
 		},
 		{
 			name: "500 Get Internal Server Error",
-			query:  fmt.Sprintf("recipeID=%d&ingredientID=%d",
-					recipe.Recipe.ID,
-					recipe.Ingredients[0].IngredientID),
+			query: fmt.Sprintf("recipeID=%d&ingredientID=%d",
+				recipe.Recipe.ID,
+				recipe.Ingredients[0].IngredientID),
 			setupAuth: func(t *testing.T, req *http.Request, tokenMaker auth.TokenMaker) {
 				addAuthorization(t, req, tokenMaker, authBearerType, user.ID, time.Minute)
 			},
 			buildStubs: func(storage *dbmock.MockStorage) {
-				arg := db.DeleteRecipeIngredientParams {
-					RecipeID: recipe.Recipe.ID,
+				arg := db.DeleteRecipeIngredientParams{
+					RecipeID:     recipe.Recipe.ID,
 					IngredientID: recipe.Ingredients[0].IngredientID,
 				}
 				storage.EXPECT().
-						GetRecipe(gomock.Any(), gomock.Eq(recipe.Recipe.ID)).
-						Times(1).
-						Return(db.Recipe{}, sql.ErrConnDone)
+					GetRecipe(gomock.Any(), gomock.Eq(recipe.Recipe.ID)).
+					Times(1).
+					Return(db.Recipe{}, sql.ErrConnDone)
 				storage.EXPECT().
 					GetPermission(gomock.Any(), gomock.Not(user.ID)).
 					Times(0)
@@ -642,21 +643,21 @@ func TestDeleteRecipeIngredientAPI(t *testing.T) {
 		},
 		{
 			name: "404 Delete Not Found",
-			query:  fmt.Sprintf("recipeID=%d&ingredientID=%d",
-					recipe.Recipe.ID,
-					recipe.Ingredients[0].IngredientID),
+			query: fmt.Sprintf("recipeID=%d&ingredientID=%d",
+				recipe.Recipe.ID,
+				recipe.Ingredients[0].IngredientID),
 			setupAuth: func(t *testing.T, req *http.Request, tokenMaker auth.TokenMaker) {
 				addAuthorization(t, req, tokenMaker, authBearerType, user.ID, time.Minute)
 			},
 			buildStubs: func(storage *dbmock.MockStorage) {
-				arg := db.DeleteRecipeIngredientParams {
-					RecipeID: recipe.Recipe.ID,
+				arg := db.DeleteRecipeIngredientParams{
+					RecipeID:     recipe.Recipe.ID,
 					IngredientID: recipe.Ingredients[0].IngredientID,
 				}
 				storage.EXPECT().
-						GetRecipe(gomock.Any(), gomock.Eq(recipe.Recipe.ID)).
-						Times(1).
-						Return(recipe.Recipe, nil)
+					GetRecipe(gomock.Any(), gomock.Eq(recipe.Recipe.ID)).
+					Times(1).
+					Return(recipe.Recipe, nil)
 				storage.EXPECT().
 					GetPermission(gomock.Any(), gomock.Eq(user.ID)).
 					Times(1).
@@ -674,21 +675,21 @@ func TestDeleteRecipeIngredientAPI(t *testing.T) {
 		},
 		{
 			name: "500 Delete Internal Server Error",
-			query:  fmt.Sprintf("recipeID=%d&ingredientID=%d",
-					recipe.Recipe.ID,
-					recipe.Ingredients[0].IngredientID),
+			query: fmt.Sprintf("recipeID=%d&ingredientID=%d",
+				recipe.Recipe.ID,
+				recipe.Ingredients[0].IngredientID),
 			setupAuth: func(t *testing.T, req *http.Request, tokenMaker auth.TokenMaker) {
 				addAuthorization(t, req, tokenMaker, authBearerType, user.ID, time.Minute)
 			},
 			buildStubs: func(storage *dbmock.MockStorage) {
-				arg := db.DeleteRecipeIngredientParams {
-					RecipeID: recipe.Recipe.ID,
+				arg := db.DeleteRecipeIngredientParams{
+					RecipeID:     recipe.Recipe.ID,
 					IngredientID: recipe.Ingredients[0].IngredientID,
 				}
 				storage.EXPECT().
-						GetRecipe(gomock.Any(), gomock.Eq(recipe.Recipe.ID)).
-						Times(1).
-						Return(recipe.Recipe, nil)
+					GetRecipe(gomock.Any(), gomock.Eq(recipe.Recipe.ID)).
+					Times(1).
+					Return(recipe.Recipe, nil)
 				storage.EXPECT().
 					GetPermission(gomock.Any(), gomock.Eq(user.ID)).
 					Times(1).
@@ -719,11 +720,374 @@ func TestDeleteRecipeIngredientAPI(t *testing.T) {
 			server := newTestServer(t, storage)
 			recorder := httptest.NewRecorder()
 
-			url := fmt.Sprintf("/recipe/delete?%s",tc.query)
+			url := fmt.Sprintf("/recipe/delete?%s", tc.query)
 			request, err := http.NewRequest(http.MethodDelete, url, nil)
 			require.NoError(t, err)
 
 			tc.setupAuth(t, request, server.tokenMaker)
+			server.router.ServeHTTP(recorder, request)
+			tc.checkResponse(recorder)
+		})
+	}
+}
+
+func TestGetRecipeAPI(t *testing.T) {
+	user, _ := randomUser(t)
+	recipe := randomRecipe(user.ID)
+
+	testCases := []struct {
+		name          string
+		uri           int64
+		buildStubs    func(storage *dbmock.MockStorage)
+		checkResponse func(recorder *httptest.ResponseRecorder)
+	}{
+		{
+			name: "OK",
+			uri: recipe.Recipe.ID,
+			buildStubs: func(storage *dbmock.MockStorage) {
+				storage.EXPECT().
+					GetRecipeTx(gomock.Any(), gomock.Eq(recipe.Recipe.ID)).
+					Times(1).
+					Return(recipe, nil)
+			},
+			checkResponse: func(recorder *httptest.ResponseRecorder) {
+				require.Equal(t, http.StatusOK, recorder.Code)
+			},
+		},
+		{
+			name: "400 Bad request",
+			uri: -2,
+			buildStubs: func(storage *dbmock.MockStorage) {
+				storage.EXPECT().
+					GetRecipeTx(gomock.Any(), gomock.Eq(-2)).
+					Times(0)
+			},
+			checkResponse: func(recorder *httptest.ResponseRecorder) {
+				require.Equal(t, http.StatusBadRequest, recorder.Code)
+			},
+		},
+		{
+			name: "404 Not Found",
+			uri: recipe.Recipe.ID,
+			buildStubs: func(storage *dbmock.MockStorage) {
+				storage.EXPECT().
+					GetRecipeTx(gomock.Any(), gomock.Eq(recipe.Recipe.ID)).
+					Times(1).
+					Return(db.RecipeResult{}, sql.ErrNoRows)
+			},
+			checkResponse: func(recorder *httptest.ResponseRecorder) {
+				require.Equal(t, http.StatusNotFound, recorder.Code)
+			},
+		},
+		{
+			name: "500 Internal Server Error",
+			uri: recipe.Recipe.ID,
+			buildStubs: func(storage *dbmock.MockStorage) {
+				storage.EXPECT().
+					GetRecipeTx(gomock.Any(), gomock.Eq(recipe.Recipe.ID)).
+					Times(1).
+					Return(db.RecipeResult{}, sql.ErrTxDone)
+			},
+			checkResponse: func(recorder *httptest.ResponseRecorder) {
+				require.Equal(t, http.StatusInternalServerError, recorder.Code)
+			},
+		},
+	}
+
+	for i := range testCases {
+		tc := testCases[i]
+
+		t.Run(tc.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			storage := dbmock.NewMockStorage(ctrl)
+			tc.buildStubs(storage)
+
+			server := newTestServer(t, storage)
+			recorder := httptest.NewRecorder()
+
+			url := fmt.Sprintf("/recipe/%d", tc.uri)
+			request, err := http.NewRequest(http.MethodGet, url, nil)
+			require.NoError(t, err)
+
+			server.router.ServeHTTP(recorder, request)
+			tc.checkResponse(recorder)
+		})
+	}
+}
+
+func TestListRecipesAPI(t *testing.T) {
+	user,_ := randomUser(t)
+	recipes := []db.Recipe {
+		randomRecipe(user.ID).Recipe,
+		randomRecipe(user.ID).Recipe,
+		randomRecipe(user.ID).Recipe,
+	}
+
+	testCases := []struct {
+		name          string
+		query         string
+		buildStubs    func(storage *dbmock.MockStorage)
+		checkResponse func(recorder *httptest.ResponseRecorder)
+	}{
+		{
+			name:  "OK",
+			query: "pageSize=2&pageNum=1",
+			buildStubs: func(storage *dbmock.MockStorage) {
+				arg := db.ListRecipesParams{
+					Limit:  2,
+					Offset: 0,
+				}
+				storage.EXPECT().
+					ListRecipes(gomock.Any(), gomock.Eq(arg)).
+					Times(1).
+					Return(recipes, nil)
+			},
+			checkResponse: func(recorder *httptest.ResponseRecorder) {
+				require.Equal(t, http.StatusOK, recorder.Code)
+			},
+		},
+		{
+			name:  "400 Bad Request",
+			query: "pageSize=2",
+			buildStubs: func(storage *dbmock.MockStorage) {
+				arg := db.ListRecipesParams{
+					Limit:  2,
+					Offset: 0,
+				}
+				storage.EXPECT().
+					ListRecipes(gomock.Any(), gomock.Eq(arg)).
+					Times(0)
+			},
+			checkResponse: func(recorder *httptest.ResponseRecorder) {
+				require.Equal(t, http.StatusBadRequest, recorder.Code)
+			},
+		},
+		{
+			name:  "500 Internal Server Error",
+			query: "pageSize=2&pageNum=1",
+			buildStubs: func(storage *dbmock.MockStorage) {
+				arg := db.ListRecipesParams{
+					Limit:  2,
+					Offset: 0,
+				}
+				storage.EXPECT().
+					ListRecipes(gomock.Any(), gomock.Eq(arg)).
+					Times(1).
+					Return(nil, sql.ErrConnDone)
+			},
+			checkResponse: func(recorder *httptest.ResponseRecorder) {
+				require.Equal(t, http.StatusInternalServerError, recorder.Code)
+			},
+		},
+	}
+
+	for i := range testCases {
+		tc := testCases[i]
+
+		t.Run(tc.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			storage := dbmock.NewMockStorage(ctrl)
+			tc.buildStubs(storage)
+
+			server := newTestServer(t, storage)
+			recorder := httptest.NewRecorder()
+
+			url := fmt.Sprintf("/recipe/all?%s", tc.query)
+			request, err := http.NewRequest(http.MethodGet, url, nil)
+
+			require.NoError(t, err)
+			server.router.ServeHTTP(recorder, request)
+			tc.checkResponse(recorder)
+		})
+	}
+}
+
+func TestListRecipesUserAPI(t *testing.T) {
+	user,_ := randomUser(t)
+	recipes := []db.Recipe {
+		randomRecipe(user.ID).Recipe,
+		randomRecipe(user.ID).Recipe,
+		randomRecipe(user.ID).Recipe,
+	}
+
+	testCases := []struct {
+		name          string
+		query         string
+		buildStubs    func(storage *dbmock.MockStorage)
+		checkResponse func(recorder *httptest.ResponseRecorder)
+	}{
+		{
+			name:  "OK",
+			query: fmt.Sprintf("author=%s&pageSize=2&pageNum=1", user.ID.String()),
+			buildStubs: func(storage *dbmock.MockStorage) {
+				arg := db.ListRecipesUserParams{
+					Author: user.ID,
+					Limit:  2,
+					Offset: 0,
+				}
+				storage.EXPECT().
+					ListRecipesUser(gomock.Any(), gomock.Eq(arg)).
+					Times(1).
+					Return(recipes, nil)
+			},
+			checkResponse: func(recorder *httptest.ResponseRecorder) {
+				require.Equal(t, http.StatusOK, recorder.Code)
+			},
+		},
+		{
+			name:  "400 Bad Request",
+			query: "pageSize=2",
+			buildStubs: func(storage *dbmock.MockStorage) {
+				arg := db.ListRecipesUserParams{
+					Author: user.ID,
+					Limit:  2,
+					Offset: 0,
+				}
+				storage.EXPECT().
+					ListRecipesUser(gomock.Any(), gomock.Eq(arg)).
+					Times(0)
+			},
+			checkResponse: func(recorder *httptest.ResponseRecorder) {
+				require.Equal(t, http.StatusBadRequest, recorder.Code)
+			},
+		},
+		{
+			name:  "500 Internal Server Error",
+			query: fmt.Sprintf("author=%s&pageSize=2&pageNum=1", user.ID.String()),
+			buildStubs: func(storage *dbmock.MockStorage) {
+				arg := db.ListRecipesUserParams{
+					Author: user.ID,
+					Limit:  2,
+					Offset: 0,
+				}
+				storage.EXPECT().
+					ListRecipesUser(gomock.Any(), gomock.Eq(arg)).
+					Times(1).
+					Return(nil, sql.ErrConnDone)
+			},
+			checkResponse: func(recorder *httptest.ResponseRecorder) {
+				require.Equal(t, http.StatusInternalServerError, recorder.Code)
+			},
+		},
+	}
+
+	for i := range testCases {
+		tc := testCases[i]
+
+		t.Run(tc.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			storage := dbmock.NewMockStorage(ctrl)
+			tc.buildStubs(storage)
+
+			server := newTestServer(t, storage)
+			recorder := httptest.NewRecorder()
+
+			url := fmt.Sprintf("/recipe/list?%s", tc.query)
+			request, err := http.NewRequest(http.MethodGet, url, nil)
+
+			require.NoError(t, err)
+			server.router.ServeHTTP(recorder, request)
+			tc.checkResponse(recorder)
+		})
+	}
+}
+
+func TestSearchRecipesAPI(t *testing.T) {
+	user,_ := randomUser(t)
+	rec := randomRecipe(user.ID)
+	recipes := []db.SearchRecipeRow {
+		{
+			ID: rec.Recipe.ID,
+			Name: rec.Recipe.Name,
+			Author: rec.Recipe.Author,
+			ModifiedAt: rec.Recipe.ModifiedAt,
+		},
+	}
+
+	testCases := []struct {
+		name          string
+		query         string
+		buildStubs    func(storage *dbmock.MockStorage)
+		checkResponse func(recorder *httptest.ResponseRecorder)
+	}{
+		{
+			name:  "OK",
+			query: fmt.Sprintf("name=%s&pageSize=2&pageNum=1", strings.ToLower(recipes[0].Name)),
+			buildStubs: func(storage *dbmock.MockStorage) {
+				arg := db.SearchRecipeParams{
+					Name:	fmt.Sprintf("%%%s%%", strings.ToLower(recipes[0].Name)),
+					Limit:  2,
+					Offset: 0,
+				}
+				storage.EXPECT().
+					SearchRecipe(gomock.Any(), gomock.Eq(arg)).
+					Times(1).
+					Return(recipes, nil)
+			},
+			checkResponse: func(recorder *httptest.ResponseRecorder) {
+				require.Equal(t, http.StatusOK, recorder.Code)
+			},
+		},
+		{
+			name:  "400 Bad Request",
+			query: fmt.Sprintf("name=%s&pageSize=2&pageNum=1", recipes[0].Name),
+			buildStubs: func(storage *dbmock.MockStorage) {
+				arg := db.SearchRecipeParams{
+					Name:	fmt.Sprintf("%%%s%%", recipes[0].Name),
+					Limit:  2,
+					Offset: 0,
+				}
+				storage.EXPECT().
+					SearchRecipe(gomock.Any(), gomock.Eq(arg)).
+					Times(0)
+			},
+			checkResponse: func(recorder *httptest.ResponseRecorder) {
+				require.Equal(t, http.StatusBadRequest, recorder.Code)
+			},
+		},
+		{
+			name:  "500 Internal Server Error",
+			query: fmt.Sprintf("name=%s&pageSize=2&pageNum=1", strings.ToLower(recipes[0].Name)),
+			buildStubs: func(storage *dbmock.MockStorage) {
+				arg := db.SearchRecipeParams{
+					Name:	fmt.Sprintf("%%%s%%", strings.ToLower(recipes[0].Name)),
+					Limit:  2,
+					Offset: 0,
+				}
+				storage.EXPECT().
+					SearchRecipe(gomock.Any(), gomock.Eq(arg)).
+					Times(1).
+					Return(nil, sql.ErrConnDone)
+			},
+			checkResponse: func(recorder *httptest.ResponseRecorder) {
+				require.Equal(t, http.StatusInternalServerError, recorder.Code)
+			},
+		},
+	}
+
+	for i := range testCases {
+		tc := testCases[i]
+
+		t.Run(tc.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			storage := dbmock.NewMockStorage(ctrl)
+			tc.buildStubs(storage)
+
+			server := newTestServer(t, storage)
+			recorder := httptest.NewRecorder()
+
+			url := fmt.Sprintf("/recipe?%s", tc.query)
+			request, err := http.NewRequest(http.MethodGet, url, nil)
+
+			require.NoError(t, err)
 			server.router.ServeHTTP(recorder, request)
 			tc.checkResponse(recorder)
 		})

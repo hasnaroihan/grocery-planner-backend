@@ -8,6 +8,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/hasnaroihan/grocery-planner/auth"
 	db "github.com/hasnaroihan/grocery-planner/db/sqlc"
+	"github.com/hasnaroihan/grocery-planner/util"
 )
 
 type generateGroceriesRequest struct {
@@ -60,7 +61,7 @@ func (server *Server) listSchedules(ctx *gin.Context) {
 }
 
 type listPageUserRequest struct {
-	ID 			uuid.UUID	`form:"author" binding:"required,uuid"`
+	ID 			string	`form:"author" binding:"required,uuid4"`
 	PageSize	int32 		`form:"pageSize" binding:"required,number"`
 	PageNum		int32 		`form:"pageNum" binding:"required,number"`
 }
@@ -72,6 +73,11 @@ func (server *Server) listSchedulesUser(ctx *gin.Context) {
 		ctx.JSON(http.StatusBadRequest, errorResponse(err))
 		return
 	}
+	id, err := util.ConvertUUIDString(req.ID)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		return
+	}
 
 	// check permission
 	authPayload := ctx.MustGet(authPayloadKey).(*auth.Payload)
@@ -80,14 +86,14 @@ func (server *Server) listSchedulesUser(ctx *gin.Context) {
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 		return
 	}
-	if req.ID != authPayload.Subject || permit.Role != "admin" {
+	if id != authPayload.Subject || permit.Role != "admin" {
 		ctx.JSON(http.StatusForbidden, errorResponse(ErrAccessDenied))
 		return
 	}
 
 	arg := db.ListSchedulesUserParams {
 		Author: uuid.NullUUID{
-			UUID: req.ID,
+			UUID: id,
 			Valid: true,
 		},
 		Limit: req.PageSize,

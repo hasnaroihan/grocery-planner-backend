@@ -10,6 +10,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/hasnaroihan/grocery-planner/auth"
 	db "github.com/hasnaroihan/grocery-planner/db/sqlc"
+	"github.com/hasnaroihan/grocery-planner/util"
 )
 
 type newRecipeRequest struct {
@@ -182,7 +183,7 @@ func (server *Server) listRecipes(ctx *gin.Context) {
 
 	arg := db.ListRecipesParams {
 		Limit: req.PageSize,
-		Offset: req.PageNum,
+		Offset: (req.PageNum-1)*req.PageSize,
 	}
 	recipes, err := server.storage.ListRecipes(ctx,arg)
 	if err != nil {
@@ -203,10 +204,16 @@ func (server *Server) listRecipesUser(ctx *gin.Context) {
 		return
 	}
 
+	id, err := util.ConvertUUIDString(req.ID)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		return
+	}
+
 	arg := db.ListRecipesUserParams {
-		Author: req.ID,
+		Author: id,
 		Limit: req.PageSize,
-		Offset: req.PageNum,
+		Offset: (req.PageNum-1)*req.PageSize,
 	}
 	recipes, err := server.storage.ListRecipesUser(ctx,arg)
 	if err != nil {
@@ -236,7 +243,7 @@ func (server *Server) searchRecipe(ctx *gin.Context) {
 	arg := db.SearchRecipeParams {
 		Name: fmt.Sprintf("%%%s%%",req.Name),
 		Limit: req.PageSize,
-		Offset: req.PageNum,
+		Offset: (req.PageNum-1)*req.PageSize,
 	}
 	recipes, err := server.storage.SearchRecipe(ctx,arg)
 	if err != nil {
