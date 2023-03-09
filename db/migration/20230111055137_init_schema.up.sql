@@ -53,7 +53,7 @@ CREATE TABLE IF NOT EXISTS public.schedules
 (
     id bigint NOT NULL GENERATED ALWAYS AS IDENTITY ( INCREMENT 1 START 1 MINVALUE 1 ),
     author uuid DEFAULT NULL,
-    created_at timestamp with time zone NOT NULL DEFAULT (now()),
+    created_at timestamp with time zone NOT NULL DEFAULT (now() at time zone 'utc'),
     PRIMARY KEY (id)
 );
 

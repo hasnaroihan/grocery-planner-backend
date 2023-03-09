@@ -320,17 +320,16 @@ UPDATE recipes
     set name = $2,
     portion = $3,
     steps = $4,
-    modified_at = $5
+    modified_at = (now() at time zone 'utc')
 WHERE id = $1
 RETURNING id, name, author, portion, steps, created_at, modified_at
 `
 
 type UpdateRecipeParams struct {
-	ID         int64          `json:"id"`
-	Name       string         `json:"name"`
-	Portion    int32          `json:"portion"`
-	Steps      sql.NullString `json:"steps"`
-	ModifiedAt time.Time      `json:"modifiedAt"`
+	ID      int64          `json:"id"`
+	Name    string         `json:"name"`
+	Portion int32          `json:"portion"`
+	Steps   sql.NullString `json:"steps"`
 }
 
 func (q *Queries) UpdateRecipe(ctx context.Context, arg UpdateRecipeParams) (Recipe, error) {
@@ -339,7 +338,6 @@ func (q *Queries) UpdateRecipe(ctx context.Context, arg UpdateRecipeParams) (Rec
 		arg.Name,
 		arg.Portion,
 		arg.Steps,
-		arg.ModifiedAt,
 	)
 	var i Recipe
 	err := row.Scan(

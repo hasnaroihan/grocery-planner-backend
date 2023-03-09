@@ -18,6 +18,7 @@ import (
 	dbmock "github.com/hasnaroihan/grocery-planner/db/mock"
 	db "github.com/hasnaroihan/grocery-planner/db/sqlc"
 	"github.com/hasnaroihan/grocery-planner/util"
+	"github.com/lib/pq"
 	"github.com/stretchr/testify/require"
 )
 
@@ -124,6 +125,52 @@ func TestRegisterAPI(t *testing.T) {
 			},
 			checkResponse: func(recorder *httptest.ResponseRecorder) {
 				require.Equal(t, http.StatusInternalServerError, recorder.Code)
+			},
+		},
+		{
+			name: "500 Connection Done",
+			body: gin.H{
+				"username": user.Username,
+				"email":    user.Email,
+				"password": password,
+			},
+			buildStubs: func(storage *dbmock.MockStorage) {
+				arg := db.CreateUserParams{
+					Username: user.Username,
+					Email:    user.Email,
+					Role:     user.Role,
+				}
+				storage.EXPECT().
+					CreateUser(gomock.Any(), EqCreateUserParams(arg, password)).
+					Times(1).
+					Return(db.User{}, sql.ErrConnDone)
+			},
+			checkResponse: func(recorder *httptest.ResponseRecorder) {
+				require.Equal(t, http.StatusInternalServerError, recorder.Code)
+			},
+		},
+		{
+			name: "409 Unique Violation",
+			body: gin.H{
+				"username": user.Username,
+				"email":    user.Email,
+				"password": password,
+			},
+			buildStubs: func(storage *dbmock.MockStorage) {
+				arg := db.CreateUserParams{
+					Username: user.Username,
+					Email:    user.Email,
+					Role:     user.Role,
+				}
+				storage.EXPECT().
+					CreateUser(gomock.Any(), EqCreateUserParams(arg, password)).
+					Times(1).
+					Return(db.User{}, error(&pq.Error{
+						Code: "23505",
+					}))
+			},
+			checkResponse: func(recorder *httptest.ResponseRecorder) {
+				require.Equal(t, http.StatusConflict, recorder.Code)
 			},
 		},
 	}

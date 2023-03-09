@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
-	"strings"
 	"testing"
 	"time"
 
@@ -21,9 +20,9 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestCreateIngredientAPI(t *testing.T) {
+func TestCreateUnitAPI(t *testing.T) {
 	admin, _ := randomAdmin(t)
-	ingredient := randomIngredient(t)
+	unit := randomUnit()
 
 	testCase := []struct {
 		name          string
@@ -35,17 +34,12 @@ func TestCreateIngredientAPI(t *testing.T) {
 		{
 			name: "OK",
 			body: gin.H{
-				"name":        strings.ToLower(ingredient.Name),
-				"defaultUnit": ingredient.DefaultUnit,
+				"name": unit.Name,
 			},
 			setupAuth: func(t *testing.T, req *http.Request, tokenMaker auth.TokenMaker) {
 				addAuthorization(t, req, tokenMaker, authBearerType, admin.ID, time.Minute)
 			},
 			buildStubs: func(storage *dbmock.MockStorage) {
-				arg := db.CreateIngredientParams{
-					Name:        strings.ToLower(ingredient.Name),
-					DefaultUnit: ingredient.DefaultUnit,
-				}
 				storage.EXPECT().
 					GetPermission(gomock.Any(), gomock.Eq(admin.ID)).
 					Times(1).
@@ -54,9 +48,9 @@ func TestCreateIngredientAPI(t *testing.T) {
 						VerifiedAt: sql.NullTime{},
 					}, nil)
 				storage.EXPECT().
-					CreateIngredient(gomock.Any(), gomock.Eq(arg)).
+					CreateUnit(gomock.Any(), gomock.Eq(unit.Name)).
 					Times(1).
-					Return(ingredient, nil)
+					Return(unit, nil)
 			},
 			checkResponse: func(recorder *httptest.ResponseRecorder) {
 				require.Equal(t, http.StatusOK, recorder.Code)
@@ -64,18 +58,11 @@ func TestCreateIngredientAPI(t *testing.T) {
 		},
 		{
 			name: "400 Bad Name",
-			body: gin.H{
-				"name":        ingredient.Name,
-				"defaultUnit": ingredient.DefaultUnit,
-			},
+			body: gin.H{},
 			setupAuth: func(t *testing.T, req *http.Request, tokenMaker auth.TokenMaker) {
 				addAuthorization(t, req, tokenMaker, authBearerType, admin.ID, time.Minute)
 			},
 			buildStubs: func(storage *dbmock.MockStorage) {
-				arg := db.CreateIngredientParams{
-					Name:        strings.ToLower(ingredient.Name),
-					DefaultUnit: ingredient.DefaultUnit,
-				}
 				storage.EXPECT().
 					GetPermission(gomock.Any(), gomock.Eq(admin.ID)).
 					Times(1).
@@ -84,7 +71,7 @@ func TestCreateIngredientAPI(t *testing.T) {
 						VerifiedAt: sql.NullTime{},
 					}, nil)
 				storage.EXPECT().
-					CreateIngredient(gomock.Any(), gomock.Eq(arg)).
+					CreateUnit(gomock.Any(), gomock.Eq(unit.Name)).
 					Times(0)
 			},
 			checkResponse: func(recorder *httptest.ResponseRecorder) {
@@ -94,17 +81,12 @@ func TestCreateIngredientAPI(t *testing.T) {
 		{
 			name: "500 Connection Done",
 			body: gin.H{
-				"name":        strings.ToLower(ingredient.Name),
-				"defaultUnit": ingredient.DefaultUnit,
+				"name":  unit.Name,
 			},
 			setupAuth: func(t *testing.T, req *http.Request, tokenMaker auth.TokenMaker) {
 				addAuthorization(t, req, tokenMaker, authBearerType, admin.ID, time.Minute)
 			},
 			buildStubs: func(storage *dbmock.MockStorage) {
-				arg := db.CreateIngredientParams{
-					Name:        strings.ToLower(ingredient.Name),
-					DefaultUnit: ingredient.DefaultUnit,
-				}
 				storage.EXPECT().
 					GetPermission(gomock.Any(), gomock.Eq(admin.ID)).
 					Times(1).
@@ -113,9 +95,9 @@ func TestCreateIngredientAPI(t *testing.T) {
 						VerifiedAt: sql.NullTime{},
 					}, nil)
 				storage.EXPECT().
-					CreateIngredient(gomock.Any(), gomock.Eq(arg)).
+					CreateUnit(gomock.Any(), gomock.Eq(unit.Name)).
 					Times(1).
-					Return(db.Ingredient{}, sql.ErrConnDone)
+					Return(db.Unit{}, sql.ErrConnDone)
 			},
 			checkResponse: func(recorder *httptest.ResponseRecorder) {
 				require.Equal(t, http.StatusInternalServerError, recorder.Code)
@@ -124,17 +106,12 @@ func TestCreateIngredientAPI(t *testing.T) {
 		{
 			name: "409 Unique Violation",
 			body: gin.H{
-				"name":        strings.ToLower(ingredient.Name),
-				"defaultUnit": ingredient.DefaultUnit,
+				"name": unit.Name,
 			},
 			setupAuth: func(t *testing.T, req *http.Request, tokenMaker auth.TokenMaker) {
 				addAuthorization(t, req, tokenMaker, authBearerType, admin.ID, time.Minute)
 			},
 			buildStubs: func(storage *dbmock.MockStorage) {
-				arg := db.CreateIngredientParams{
-					Name:        strings.ToLower(ingredient.Name),
-					DefaultUnit: ingredient.DefaultUnit,
-				}
 				storage.EXPECT().
 					GetPermission(gomock.Any(), gomock.Eq(admin.ID)).
 					Times(1).
@@ -143,9 +120,9 @@ func TestCreateIngredientAPI(t *testing.T) {
 						VerifiedAt: sql.NullTime{},
 					}, nil)
 				storage.EXPECT().
-					CreateIngredient(gomock.Any(), gomock.Eq(arg)).
+					CreateUnit(gomock.Any(), gomock.Eq(unit.Name)).
 					Times(1).
-					Return(db.Ingredient{}, error(&pq.Error{
+					Return(db.Unit{}, error(&pq.Error{
 						Code: "23505",
 					}))
 			},
@@ -170,7 +147,7 @@ func TestCreateIngredientAPI(t *testing.T) {
 			data, err := json.Marshal(tc.body)
 			require.NoError(t, err)
 
-			url := "/ingredients/add"
+			url := "/unit/add"
 			request, err := http.NewRequest(http.MethodPost, url, bytes.NewReader(data))
 
 			require.NoError(t, err)
@@ -182,9 +159,9 @@ func TestCreateIngredientAPI(t *testing.T) {
 	}
 }
 
-func TestDeleteIngredientAPI(t *testing.T) {
+func TestDeleteUnitAPI(t *testing.T) {
 	admin, _ := randomAdmin(t)
-	ingredient := randomIngredient(t)
+	unit := randomUnit()
 
 	testCases := []struct {
 		name          string
@@ -195,7 +172,7 @@ func TestDeleteIngredientAPI(t *testing.T) {
 	}{
 		{
 			name: "OK",
-			uri:  ingredient.ID,
+			uri:  unit.ID,
 			setupAuth: func(t *testing.T, req *http.Request, tokenMaker auth.TokenMaker) {
 				addAuthorization(t, req, tokenMaker, authBearerType, admin.ID, time.Minute)
 			},
@@ -208,7 +185,7 @@ func TestDeleteIngredientAPI(t *testing.T) {
 						VerifiedAt: sql.NullTime{},
 					}, nil)
 				storage.EXPECT().
-					DeleteIngredient(gomock.Any(), gomock.Eq(ingredient.ID)).
+					DeleteUnit(gomock.Any(), gomock.Eq(unit.ID)).
 					Times(1).
 					Return(nil)
 			},
@@ -231,7 +208,7 @@ func TestDeleteIngredientAPI(t *testing.T) {
 						VerifiedAt: sql.NullTime{},
 					}, nil)
 				storage.EXPECT().
-					DeleteIngredient(gomock.Any(), gomock.Eq(-2)).
+					DeleteUnit(gomock.Any(), gomock.Eq(-2)).
 					Times(0)
 			},
 			checkResponse: func(recorder *httptest.ResponseRecorder) {
@@ -240,7 +217,7 @@ func TestDeleteIngredientAPI(t *testing.T) {
 		},
 		{
 			name: "404 Not Found",
-			uri:  ingredient.ID,
+			uri:  unit.ID,
 			setupAuth: func(t *testing.T, req *http.Request, tokenMaker auth.TokenMaker) {
 				addAuthorization(t, req, tokenMaker, authBearerType, admin.ID, time.Minute)
 			},
@@ -253,7 +230,7 @@ func TestDeleteIngredientAPI(t *testing.T) {
 						VerifiedAt: sql.NullTime{},
 					}, nil)
 				storage.EXPECT().
-					DeleteIngredient(gomock.Any(), gomock.Eq(ingredient.ID)).
+					DeleteUnit(gomock.Any(), gomock.Eq(unit.ID)).
 					Times(1).
 					Return(sql.ErrNoRows)
 			},
@@ -263,7 +240,7 @@ func TestDeleteIngredientAPI(t *testing.T) {
 		},
 		{
 			name: "500 Internal Server Error",
-			uri:  ingredient.ID,
+			uri:  unit.ID,
 			setupAuth: func(t *testing.T, req *http.Request, tokenMaker auth.TokenMaker) {
 				addAuthorization(t, req, tokenMaker, authBearerType, admin.ID, time.Minute)
 			},
@@ -276,7 +253,7 @@ func TestDeleteIngredientAPI(t *testing.T) {
 						VerifiedAt: sql.NullTime{},
 					}, nil)
 				storage.EXPECT().
-					DeleteIngredient(gomock.Any(), gomock.Eq(ingredient.ID)).
+					DeleteUnit(gomock.Any(), gomock.Eq(unit.ID)).
 					Times(1).
 					Return(sql.ErrConnDone)
 			},
@@ -298,7 +275,7 @@ func TestDeleteIngredientAPI(t *testing.T) {
 			server := newTestServer(t, storage)
 			recorder := httptest.NewRecorder()
 
-			url := fmt.Sprintf("/ingredients/delete/%v", tc.uri)
+			url := fmt.Sprintf("/unit/delete/%v", tc.uri)
 			request, err := http.NewRequest(http.MethodDelete, url, nil)
 
 			require.NoError(t, err)
@@ -310,9 +287,9 @@ func TestDeleteIngredientAPI(t *testing.T) {
 	}
 }
 
-func TestGetIngredientAPI(t *testing.T) {
+func TestGetUnitAPI(t *testing.T) {
 	admin, _ := randomUser(t)
-	ingredient := randomIngredient(t)
+	unit := randomUnit()
 
 	testCases := []struct {
 		name          string
@@ -323,15 +300,15 @@ func TestGetIngredientAPI(t *testing.T) {
 	}{
 		{
 			name: "OK",
-			uri:  ingredient.ID,
+			uri:  unit.ID,
 			setupAuth: func(t *testing.T, req *http.Request, tokenMaker auth.TokenMaker) {
 				addAuthorization(t, req, tokenMaker, authBearerType, admin.ID, time.Minute)
 			},
 			buildStubs: func(storage *dbmock.MockStorage) {
 				storage.EXPECT().
-					GetIngredient(gomock.Any(), gomock.Eq(ingredient.ID)).
+					GetUnit(gomock.Any(), gomock.Eq(unit.ID)).
 					Times(1).
-					Return(ingredient, nil)
+					Return(unit, nil)
 			},
 			checkResponse: func(recorder *httptest.ResponseRecorder) {
 				require.Equal(t, http.StatusOK, recorder.Code)
@@ -345,7 +322,7 @@ func TestGetIngredientAPI(t *testing.T) {
 			},
 			buildStubs: func(storage *dbmock.MockStorage) {
 				storage.EXPECT().
-					GetIngredient(gomock.Any(), gomock.Eq(-2)).
+					GetUnit(gomock.Any(), gomock.Eq(-2)).
 					Times(0)
 			},
 			checkResponse: func(recorder *httptest.ResponseRecorder) {
@@ -354,15 +331,15 @@ func TestGetIngredientAPI(t *testing.T) {
 		},
 		{
 			name: "404 Not Found",
-			uri:  ingredient.ID,
+			uri: unit.ID,
 			setupAuth: func(t *testing.T, req *http.Request, tokenMaker auth.TokenMaker) {
 				addAuthorization(t, req, tokenMaker, authBearerType, admin.ID, time.Minute)
 			},
 			buildStubs: func(storage *dbmock.MockStorage) {
 				storage.EXPECT().
-					GetIngredient(gomock.Any(), gomock.Eq(ingredient.ID)).
+					GetUnit(gomock.Any(), gomock.Eq(unit.ID)).
 					Times(1).
-					Return(db.Ingredient{}, sql.ErrNoRows)
+					Return(db.Unit{}, sql.ErrNoRows)
 			},
 			checkResponse: func(recorder *httptest.ResponseRecorder) {
 				require.Equal(t, http.StatusNotFound, recorder.Code)
@@ -370,15 +347,15 @@ func TestGetIngredientAPI(t *testing.T) {
 		},
 		{
 			name: "500 Internal Server Error",
-			uri:  ingredient.ID,
+			uri:  unit.ID,
 			setupAuth: func(t *testing.T, req *http.Request, tokenMaker auth.TokenMaker) {
 				addAuthorization(t, req, tokenMaker, authBearerType, admin.ID, time.Minute)
 			},
 			buildStubs: func(storage *dbmock.MockStorage) {
 				storage.EXPECT().
-					GetIngredient(gomock.Any(), gomock.Eq(ingredient.ID)).
+					GetUnit(gomock.Any(), gomock.Eq(unit.ID)).
 					Times(1).
-					Return(db.Ingredient{}, sql.ErrConnDone)
+					Return(db.Unit{}, sql.ErrConnDone)
 			},
 			checkResponse: func(recorder *httptest.ResponseRecorder) {
 				require.Equal(t, http.StatusInternalServerError, recorder.Code)
@@ -398,7 +375,7 @@ func TestGetIngredientAPI(t *testing.T) {
 			server := newTestServer(t, storage)
 			recorder := httptest.NewRecorder()
 
-			url := fmt.Sprintf("/ingredients/%v", tc.uri)
+			url := fmt.Sprintf("/unit/%v", tc.uri)
 			request, err := http.NewRequest(http.MethodGet, url, nil)
 
 			require.NoError(t, err)
@@ -410,11 +387,11 @@ func TestGetIngredientAPI(t *testing.T) {
 	}
 }
 
-func TestListIngredientsAPI(t *testing.T) {
-	ingredients := []db.Ingredient{
-		randomIngredient(t),
-		randomIngredient(t),
-		randomIngredient(t),
+func TestListUnitAPI(t *testing.T) {
+	units := []db.Unit{
+		randomUnit(),
+		randomUnit(),
+		randomUnit(),
 	}
 	user, _ := randomUser(t)
 
@@ -431,9 +408,9 @@ func TestListIngredientsAPI(t *testing.T) {
 			},
 			buildStubs: func(storage *dbmock.MockStorage) {
 				storage.EXPECT().
-					ListIngredients(gomock.Any()).
+					ListUnits(gomock.Any()).
 					Times(1).
-					Return(ingredients, nil)
+					Return(units, nil)
 			},
 			checkResponse: func(recorder *httptest.ResponseRecorder) {
 				require.Equal(t, http.StatusOK, recorder.Code)
@@ -446,9 +423,9 @@ func TestListIngredientsAPI(t *testing.T) {
 			},
 			buildStubs: func(storage *dbmock.MockStorage) {
 				storage.EXPECT().
-					ListIngredients(gomock.Any()).
+					ListUnits(gomock.Any()).
 					Times(1).
-					Return([]db.Ingredient{}, sql.ErrConnDone)
+					Return([]db.Unit{}, sql.ErrConnDone)
 			},
 			checkResponse: func(recorder *httptest.ResponseRecorder) {
 				require.Equal(t, http.StatusInternalServerError, recorder.Code)
@@ -469,7 +446,7 @@ func TestListIngredientsAPI(t *testing.T) {
 			server := newTestServer(t, storage)
 			recorder := httptest.NewRecorder()
 
-			url := "/ingredients/all"
+			url := "/unit/all"
 			request, err := http.NewRequest(http.MethodGet, url, nil)
 
 			require.NoError(t, err)
@@ -481,102 +458,9 @@ func TestListIngredientsAPI(t *testing.T) {
 	}
 }
 
-func TestSearchIngredientsAPI(t *testing.T) {
-	ingredient := randomIngredient(t)
-	ingredients := []db.SearchIngredientsRow{
-		{
-			ID: ingredient.ID,
-			Name: ingredient.Name,
-			DefaultUnit: ingredient.DefaultUnit,
-		},
-	}
-	user, _ := randomUser(t)
-
-	testCases := []struct {
-		name          string
-		query         string
-		setupAuth     func(t *testing.T, req *http.Request, tokenMaker auth.TokenMaker)
-		buildStubs    func(storage *dbmock.MockStorage)
-		checkResponse func(recorder *httptest.ResponseRecorder)
-	}{
-		{
-			name: "OK",
-			query: "daging",
-			setupAuth: func(t *testing.T, req *http.Request, tokenMaker auth.TokenMaker) {
-				addAuthorization(t, req, tokenMaker, authBearerType, user.ID, time.Minute)
-			},
-			buildStubs: func(storage *dbmock.MockStorage) {
-				storage.EXPECT().
-					SearchIngredients(gomock.Any(), gomock.Eq("%daging%")).
-					Times(1).
-					Return(ingredients, nil)
-			},
-			checkResponse: func(recorder *httptest.ResponseRecorder) {
-				require.Equal(t, http.StatusOK, recorder.Code)
-			},
-		},
-		{
-			name: "OK Empty Row",
-			query: "daging",
-			setupAuth: func(t *testing.T, req *http.Request, tokenMaker auth.TokenMaker) {
-				addAuthorization(t, req, tokenMaker, authBearerType, user.ID, time.Minute)
-			},
-			buildStubs: func(storage *dbmock.MockStorage) {
-				storage.EXPECT().
-					SearchIngredients(gomock.Any(), gomock.Eq("%daging%")).
-					Times(1).
-					Return([]db.SearchIngredientsRow{}, sql.ErrNoRows)
-			},
-			checkResponse: func(recorder *httptest.ResponseRecorder) {
-				require.Equal(t, http.StatusOK, recorder.Code)
-			},
-		},
-		{
-			name: "500 Internal Server Error",
-			query: "daging",
-			setupAuth: func(t *testing.T, req *http.Request, tokenMaker auth.TokenMaker) {
-				addAuthorization(t, req, tokenMaker, authBearerType, user.ID, time.Minute)
-			},
-			buildStubs: func(storage *dbmock.MockStorage) {
-				storage.EXPECT().
-					SearchIngredients(gomock.Any(), gomock.Eq("%daging%")).
-					Times(1).
-					Return([]db.SearchIngredientsRow{}, sql.ErrConnDone)
-			},
-			checkResponse: func(recorder *httptest.ResponseRecorder) {
-				require.Equal(t, http.StatusInternalServerError, recorder.Code)
-			},
-		},
-	}
-
-	for i := range testCases {
-		tc := testCases[i]
-
-		t.Run(tc.name, func(t *testing.T) {
-			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
-
-			storage := dbmock.NewMockStorage(ctrl)
-			tc.buildStubs(storage)
-
-			server := newTestServer(t, storage)
-			recorder := httptest.NewRecorder()
-
-			url := fmt.Sprintf("/ingredients?name=%s", tc.query)
-			request, err := http.NewRequest(http.MethodGet, url, nil)
-
-			require.NoError(t, err)
-
-			tc.setupAuth(t, request, server.tokenMaker)
-			server.router.ServeHTTP(recorder, request)
-			tc.checkResponse(recorder)
-		})
-	}
-}
-
-func TestUpdateIngredientAPI(t *testing.T) {
+func TestUpdateUnitAPI(t *testing.T) {
 	admin, _ := randomAdmin(t)
-	ingredient := randomIngredient(t)
+	unit := randomUnit()
 
 	testCases := []struct {
 		name          string
@@ -588,26 +472,18 @@ func TestUpdateIngredientAPI(t *testing.T) {
 	}{
 		{
 			name: "OK",
-			uri: ingredient.ID,
+			uri: unit.ID,
 			body: gin.H{
-				"id":       ingredient.ID,
-				"name": "new ingredient",
-				"defaultUnit": gin.H{
-					"Int32": 3,
-					"Valid": true,
-				},
+				"id":       unit.ID,
+				"name": "new unit",
 			},
 			setupAuth: func(t *testing.T, req *http.Request, tokenMaker auth.TokenMaker) {
 				addAuthorization(t, req, tokenMaker, authBearerType, admin.ID, time.Minute)
 			},
 			buildStubs: func(storage *dbmock.MockStorage) {
-				arg := db.UpdateIngredientParams{
-					ID: ingredient.ID,
-					Name: "new ingredient",
-					DefaultUnit: sql.NullInt32{
-						Int32: 3,
-						Valid: true,
-					},
+				arg := db.UpdateUnitParams{
+					ID: unit.ID,
+					Name: "new unit",
 				}
 				storage.EXPECT().
 					GetPermission(gomock.Any(), gomock.Eq(admin.ID)).
@@ -617,9 +493,9 @@ func TestUpdateIngredientAPI(t *testing.T) {
 						VerifiedAt: sql.NullTime{},
 					}, nil)
 				storage.EXPECT().
-					UpdateIngredient(gomock.Any(), gomock.Eq(arg)).
+					UpdateUnit(gomock.Any(), gomock.Eq(arg)).
 					Times(1).
-					Return(db.Ingredient{}, nil)
+					Return(unit, nil)
 			},
 			checkResponse: func(recorder *httptest.ResponseRecorder) {
 				require.Equal(t, http.StatusOK, recorder.Code)
@@ -627,26 +503,18 @@ func TestUpdateIngredientAPI(t *testing.T) {
 		},
 		{
 			name: "400 Mismatched ID",
-			uri: ingredient.ID,
+			uri: unit.ID,
 			body: gin.H{
-				"id":       ingredient.ID + 1,
-				"name": "new ingredient",
-				"defaultUnit": gin.H{
-					"Int32": 3,
-					"Valid": true,
-				},
+				"id":       unit.ID + 1,
+				"name": "new unit",
 			},
 			setupAuth: func(t *testing.T, req *http.Request, tokenMaker auth.TokenMaker) {
 				addAuthorization(t, req, tokenMaker, authBearerType, admin.ID, time.Minute)
 			},
 			buildStubs: func(storage *dbmock.MockStorage) {
-				arg := db.UpdateIngredientParams{
-					ID: ingredient.ID,
-					Name: "new ingredient",
-					DefaultUnit: sql.NullInt32{
-						Int32: 3,
-						Valid: true,
-					},
+				arg := db.UpdateUnitParams{
+					ID: unit.ID,
+					Name: "new unit",
 				}
 				storage.EXPECT().
 					GetPermission(gomock.Any(), gomock.Eq(admin.ID)).
@@ -656,7 +524,7 @@ func TestUpdateIngredientAPI(t *testing.T) {
 						VerifiedAt: sql.NullTime{},
 					}, nil)
 				storage.EXPECT().
-					UpdateIngredient(gomock.Any(), gomock.Eq(arg)).
+					UpdateUnit(gomock.Any(), gomock.Eq(arg)).
 					Times(0)
 			},
 			checkResponse: func(recorder *httptest.ResponseRecorder) {
@@ -665,26 +533,18 @@ func TestUpdateIngredientAPI(t *testing.T) {
 		},
 		{
 			name: "400 Invalid UUID",
-			uri: -ingredient.ID,
+			uri: -unit.ID,
 			body: gin.H{
-				"id":       -ingredient.ID,
-				"name": "new ingredient",
-				"defaultUnit": gin.H{
-					"Int32": 3,
-					"Valid": true,
-				},
+				"id":       -unit.ID,
+				"name": "new unit",
 			},
 			setupAuth: func(t *testing.T, req *http.Request, tokenMaker auth.TokenMaker) {
 				addAuthorization(t, req, tokenMaker, authBearerType, admin.ID, time.Minute)
 			},
 			buildStubs: func(storage *dbmock.MockStorage) {
-				arg := db.UpdateIngredientParams{
-					ID: -ingredient.ID,
-					Name: "new ingredient",
-					DefaultUnit: sql.NullInt32{
-						Int32: 3,
-						Valid: true,
-					},
+				arg := db.UpdateUnitParams{
+					ID: -unit.ID,
+					Name: "new unit",
 				}
 				storage.EXPECT().
 					GetPermission(gomock.Any(), gomock.Eq(admin.ID)).
@@ -694,7 +554,7 @@ func TestUpdateIngredientAPI(t *testing.T) {
 						VerifiedAt: sql.NullTime{},
 					}, nil)
 				storage.EXPECT().
-					UpdateIngredient(gomock.Any(), gomock.Eq(arg)).
+					UpdateUnit(gomock.Any(), gomock.Eq(arg)).
 					Times(0)
 			},
 			checkResponse: func(recorder *httptest.ResponseRecorder) {
@@ -703,26 +563,18 @@ func TestUpdateIngredientAPI(t *testing.T) {
 		},
 		{
 			name: "404 Not Found",
-			uri: ingredient.ID,
+			uri: unit.ID,
 			body: gin.H{
-				"id":       ingredient.ID,
-				"name": "new ingredient",
-				"defaultUnit": gin.H{
-					"Int32": 3,
-					"Valid": true,
-				},
+				"id":       unit.ID,
+				"name": "new unit",
 			},
 			setupAuth: func(t *testing.T, req *http.Request, tokenMaker auth.TokenMaker) {
 				addAuthorization(t, req, tokenMaker, authBearerType, admin.ID, time.Minute)
 			},
 			buildStubs: func(storage *dbmock.MockStorage) {
-				arg := db.UpdateIngredientParams{
-					ID: ingredient.ID,
-					Name: "new ingredient",
-					DefaultUnit: sql.NullInt32{
-						Int32: 3,
-						Valid: true,
-					},
+				arg := db.UpdateUnitParams{
+					ID: unit.ID,
+					Name: "new unit",
 				}
 				storage.EXPECT().
 					GetPermission(gomock.Any(), gomock.Eq(admin.ID)).
@@ -732,9 +584,9 @@ func TestUpdateIngredientAPI(t *testing.T) {
 						VerifiedAt: sql.NullTime{},
 					}, nil)
 				storage.EXPECT().
-					UpdateIngredient(gomock.Any(), gomock.Eq(arg)).
+					UpdateUnit(gomock.Any(), gomock.Eq(arg)).
 					Times(1).
-					Return(db.Ingredient{}, sql.ErrNoRows)
+					Return(db.Unit{}, sql.ErrNoRows)
 			},
 			checkResponse: func(recorder *httptest.ResponseRecorder) {
 				require.Equal(t, http.StatusNotFound, recorder.Code)
@@ -742,26 +594,18 @@ func TestUpdateIngredientAPI(t *testing.T) {
 		},
 		{
 			name: "500 Internal Server Error",
-			uri: ingredient.ID,
+			uri: unit.ID,
 			body: gin.H{
-				"id":       ingredient.ID,
-				"name": "new ingredient",
-				"defaultUnit": gin.H{
-					"Int32": 3,
-					"Valid": true,
-				},
+				"id":       unit.ID,
+				"name": "new unit",
 			},
 			setupAuth: func(t *testing.T, req *http.Request, tokenMaker auth.TokenMaker) {
 				addAuthorization(t, req, tokenMaker, authBearerType, admin.ID, time.Minute)
 			},
 			buildStubs: func(storage *dbmock.MockStorage) {
-				arg := db.UpdateIngredientParams{
-					ID: ingredient.ID,
-					Name: "new ingredient",
-					DefaultUnit: sql.NullInt32{
-						Int32: 3,
-						Valid: true,
-					},
+				arg := db.UpdateUnitParams{
+					ID: unit.ID,
+					Name: "new unit",
 				}
 				storage.EXPECT().
 					GetPermission(gomock.Any(), gomock.Eq(admin.ID)).
@@ -771,9 +615,9 @@ func TestUpdateIngredientAPI(t *testing.T) {
 						VerifiedAt: sql.NullTime{},
 					}, nil)
 				storage.EXPECT().
-					UpdateIngredient(gomock.Any(), gomock.Eq(arg)).
+					UpdateUnit(gomock.Any(), gomock.Eq(arg)).
 					Times(1).
-					Return(db.Ingredient{}, sql.ErrConnDone)
+					Return(db.Unit{}, sql.ErrConnDone)
 			},
 			checkResponse: func(recorder *httptest.ResponseRecorder) {
 				require.Equal(t, http.StatusInternalServerError, recorder.Code)
@@ -797,7 +641,7 @@ func TestUpdateIngredientAPI(t *testing.T) {
 			data, err := json.Marshal(tc.body)
 			require.NoError(t, err)
 
-			url := fmt.Sprintf("/ingredients/update/%v", tc.uri)
+			url := fmt.Sprintf("/unit/update/%v", tc.uri)
 			request, err := http.NewRequest(http.MethodPatch, url, bytes.NewReader(data))
 			require.NoError(t, err)
 
@@ -808,13 +652,9 @@ func TestUpdateIngredientAPI(t *testing.T) {
 	}
 }
 
-func randomIngredient(t *testing.T) db.Ingredient {
-	return db.Ingredient{
-		ID:   int32(util.RandomInt(1, 300)),
-		Name: util.RandomIngredient(),
-		DefaultUnit: sql.NullInt32{
-			Int32: int32(util.RandomInt(1, 300)),
-			Valid: true,
-		},
+func randomUnit() db.Unit {
+	return db.Unit{
+		ID: int32(util.RandomInt(1,100)),
+		Name: util.RandomUnit(),
 	}
 }

@@ -5,18 +5,18 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/hasnaroihan/grocery-planner/auth"
 	db "github.com/hasnaroihan/grocery-planner/db/sqlc"
+	"github.com/hasnaroihan/grocery-planner/util"
 )
 
 type newRecipeRequest struct {
 	Name            string                   `json:"name" binding:"required"`
 	Portion         int32                    `json:"portion" binding:"required,number,min=1"`
 	Steps           sql.NullString           `json:"steps" binding:"required,alpha"`
-	ListIngredients []db.ListIngredientParam `json:"ingredients" binding:"required,structonly,min=1"`
+	ListIngredients []db.ListIngredientParam `json:"ingredients" binding:"required,min=1"`
 }
 
 func (server *Server) newRecipe(ctx *gin.Context) {
@@ -72,7 +72,7 @@ func (server *Server) deleteRecipe(ctx *gin.Context) {
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 		return
 	}
-	if recipe.Author != authPayload.Subject || permit.Role != "admin" {
+	if recipe.Author != authPayload.Subject && permit.Role != "admin" {
 		ctx.JSON(http.StatusForbidden, errorResponse(ErrAccessDenied))
 		return
 	}
@@ -120,7 +120,7 @@ func (server *Server) deleteRecipeIngredient(ctx *gin.Context) {
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 		return
 	}
-	if recipe.Author != authPayload.Subject || permit.Role != "admin" {
+	if recipe.Author != authPayload.Subject && permit.Role != "admin" {
 		ctx.JSON(http.StatusForbidden, errorResponse(ErrAccessDenied))
 		return
 	}
@@ -182,7 +182,7 @@ func (server *Server) listRecipes(ctx *gin.Context) {
 
 	arg := db.ListRecipesParams {
 		Limit: req.PageSize,
-		Offset: req.PageNum,
+		Offset: (req.PageNum-1)*req.PageSize,
 	}
 	recipes, err := server.storage.ListRecipes(ctx,arg)
 	if err != nil {
@@ -203,10 +203,16 @@ func (server *Server) listRecipesUser(ctx *gin.Context) {
 		return
 	}
 
+	id, err := util.ConvertUUIDString(req.ID)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		return
+	}
+
 	arg := db.ListRecipesUserParams {
-		Author: req.ID,
+		Author: id,
 		Limit: req.PageSize,
-		Offset: req.PageNum,
+		Offset: (req.PageNum-1)*req.PageSize,
 	}
 	recipes, err := server.storage.ListRecipesUser(ctx,arg)
 	if err != nil {
@@ -236,7 +242,7 @@ func (server *Server) searchRecipe(ctx *gin.Context) {
 	arg := db.SearchRecipeParams {
 		Name: fmt.Sprintf("%%%s%%",req.Name),
 		Limit: req.PageSize,
-		Offset: req.PageNum,
+		Offset: (req.PageNum-1)*req.PageSize,
 	}
 	recipes, err := server.storage.SearchRecipe(ctx,arg)
 	if err != nil {
@@ -254,11 +260,11 @@ type updateRecipeUri struct {
 }
 
 type updateRecipeJSON struct {
-	ID				int64					 `uri:"id" binding:"required"`
-	Name            string                   `json:"name" binding:"required"`
+	ID				int64					 `uri:"id" binding:"required,number,min=1"`
+	Name            string                   `json:"name" binding:"required,lowercase"`
 	Portion         int32                    `json:"portion" binding:"required,number,min=1"`
 	Steps           sql.NullString           `json:"steps" binding:"required,alpha"`
-	ListIngredients []db.ListIngredientParam `json:"ingredients" binding:"required,structonly,min=1"`
+	ListIngredients []db.ListIngredientParam `json:"ingredients" binding:"required,min=1"`
 }
 
 func (server *Server) updateRecipe(ctx *gin.Context) {
@@ -286,7 +292,6 @@ func (server *Server) updateRecipe(ctx *gin.Context) {
 			Name: reqJSON.Name,
 			Portion: reqJSON.Portion,
 			Steps: reqJSON.Steps,
-			ModifiedAt: time.Now().UTC(),
 		},
 		ListIngredients: reqJSON.ListIngredients,
 	}
@@ -308,7 +313,7 @@ func (server *Server) updateRecipe(ctx *gin.Context) {
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 		return
 	}
-	if recipe.Author != authPayload.Subject || permit.Role != "admin" {
+	if recipe.Author != authPayload.Subject && permit.Role != "admin" {
 		ctx.JSON(http.StatusForbidden, errorResponse(ErrAccessDenied))
 		return
 	}

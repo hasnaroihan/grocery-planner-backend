@@ -296,7 +296,6 @@ func TestUpdateRecipe(t *testing.T) {
 		Name: "test update resep",
 		Portion: 2,
 		Steps: sql.NullString{},
-		ModifiedAt: time.Now().UTC(),
 	}
 
 	recipe, err := testQueries.UpdateRecipe(
@@ -310,7 +309,7 @@ func TestUpdateRecipe(t *testing.T) {
 	require.Equal(t, arg.Name, recipe.Name)
 	require.Equal(t, arg.Portion, recipe.Portion)
 	require.Zero(t, recipe.Steps)
-	require.WithinDuration(t, arg.ModifiedAt, recipe.ModifiedAt, time.Second)
+	require.WithinDuration(t, time.Now(), recipe.ModifiedAt, time.Second)
 }
 
 func TestUpdateRecipeIngredient(t *testing.T) {
