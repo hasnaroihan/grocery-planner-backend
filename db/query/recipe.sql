@@ -56,7 +56,7 @@ UPDATE recipes
     set name = $2,
     portion = $3,
     steps = $4,
-    modified_at = $5
+    modified_at = (now() at time zone 'utc')
 WHERE id = $1
 RETURNING *;
 

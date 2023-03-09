@@ -1094,6 +1094,599 @@ func TestSearchRecipesAPI(t *testing.T) {
 	}
 }
 
+func TestUpdateRecipeAPI(t *testing.T) {
+	user,_ := randomUser(t)
+	admin,_ := randomAdmin(t)
+	recipe := randomRecipe(user.ID)
+	var ingredients []db.ListIngredientParam
+	for i := range recipe.Ingredients {
+		ingredients = append(ingredients, db.ListIngredientParam{
+			ID: sql.NullInt32{
+				Int32: recipe.Ingredients[i].IngredientID,
+				Valid: true,
+			},
+			Name:   recipe.Ingredients[i].Name,
+			Amount: recipe.Ingredients[i].Amount,
+			UnitID: recipe.Ingredients[i].UnitID,
+		})
+	}
+
+	testCases := []struct {
+		name string
+		uri int64
+		body gin.H
+		setupAuth     func(t *testing.T, req *http.Request, tokenMaker auth.TokenMaker)
+		buildStubs    func(storage *dbmock.MockStorage)
+		checkResponse func(recorder *httptest.ResponseRecorder)
+	}{
+		{
+			name: "OK User",
+			uri: recipe.Recipe.ID,
+			body: gin.H{
+				"id": recipe.Recipe.ID,
+				"name": "new recipe name",
+				"portion": 5,
+				"steps": gin.H {
+					"String": "step 123",
+					"Valid": true,
+				},
+				"ingredients": ingredients,
+			},
+			setupAuth: func(t *testing.T, req *http.Request, tokenMaker auth.TokenMaker){
+				addAuthorization(t, req, tokenMaker, authBearerType, user.ID, time.Minute)
+			},
+			buildStubs   : func(storage *dbmock.MockStorage) {
+				arg := db.TxUpdateRecipeParams {
+					Recipe: db.UpdateRecipeParams{
+						ID: recipe.Recipe.ID,
+						Name: "new recipe name",
+						Portion: 5,
+						Steps: sql.NullString{
+							String: "step 123",
+							Valid: true,
+						},
+					},
+					ListIngredients: ingredients,
+				}
+				storage.EXPECT().
+					GetRecipe(gomock.Any(), gomock.Eq(recipe.Recipe.ID)).
+					Times(1).
+					Return(recipe.Recipe, nil)
+				storage.EXPECT().
+					GetPermission(gomock.Any(), gomock.Eq(user.ID)).
+					Times(1).
+					Return(db.GetPermissionRow{
+						Role: "common",
+					}, nil)
+				storage.EXPECT().
+					UpdateRecipeTx(gomock.Any(), gomock.Eq(arg)).
+					Times(1).
+					Return(recipe, nil)
+			},
+			checkResponse: func(recorder *httptest.ResponseRecorder){
+				require.Equal(t, http.StatusOK, recorder.Code)
+			},
+		},
+		{
+			name: "OK Admin",
+			uri: recipe.Recipe.ID,
+			body: gin.H{
+				"id": recipe.Recipe.ID,
+				"name": "new recipe name",
+				"portion": 5,
+				"steps": gin.H {
+					"String": "step 123",
+					"Valid": true,
+				},
+				"ingredients": ingredients,
+			},
+			setupAuth: func(t *testing.T, req *http.Request, tokenMaker auth.TokenMaker){
+				addAuthorization(t, req, tokenMaker, authBearerType, admin.ID, time.Minute)
+			},
+			buildStubs   : func(storage *dbmock.MockStorage) {
+				arg := db.TxUpdateRecipeParams {
+					Recipe: db.UpdateRecipeParams{
+						ID: recipe.Recipe.ID,
+						Name: "new recipe name",
+						Portion: 5,
+						Steps: sql.NullString{
+							String: "step 123",
+							Valid: true,
+						},
+					},
+					ListIngredients: ingredients,
+				}
+				storage.EXPECT().
+					GetRecipe(gomock.Any(), gomock.Eq(recipe.Recipe.ID)).
+					Times(1).
+					Return(recipe.Recipe, nil)
+				storage.EXPECT().
+					GetPermission(gomock.Any(), gomock.Eq(admin.ID)).
+					Times(1).
+					Return(db.GetPermissionRow{
+						Role: "admin",
+					}, nil)
+				storage.EXPECT().
+					UpdateRecipeTx(gomock.Any(), gomock.Eq(arg)).
+					Times(1).
+					Return(recipe, nil)
+			},
+			checkResponse: func(recorder *httptest.ResponseRecorder){
+				require.Equal(t, http.StatusOK, recorder.Code)
+			},
+		},
+		{
+			name: "400 Mismatched ID",
+			uri: util.RandomInt(1,100),
+			body: gin.H{
+				"id": recipe.Recipe.ID,
+				"name": "new recipe name",
+				"portion": 5,
+				"steps": gin.H {
+					"String": "step 123",
+					"Valid": true,
+				},
+				"ingredients": ingredients,
+			},
+			setupAuth: func(t *testing.T, req *http.Request, tokenMaker auth.TokenMaker){
+				addAuthorization(t, req, tokenMaker, authBearerType, admin.ID, time.Minute)
+			},
+			buildStubs   : func(storage *dbmock.MockStorage) {
+				arg := db.TxUpdateRecipeParams {
+					Recipe: db.UpdateRecipeParams{
+						ID: recipe.Recipe.ID,
+						Name: "new recipe name",
+						Portion: 5,
+						Steps: sql.NullString{
+							String: "step 123",
+							Valid: true,
+						},
+					},
+					ListIngredients: ingredients,
+				}
+				storage.EXPECT().
+					GetRecipe(gomock.Any(), gomock.Eq(recipe.Recipe.ID)).
+					Times(0)
+				storage.EXPECT().
+					GetPermission(gomock.Any(), gomock.Eq(admin.ID)).
+					Times(0)
+				storage.EXPECT().
+					UpdateRecipeTx(gomock.Any(), gomock.Eq(arg)).
+					Times(0)
+			},
+			checkResponse: func(recorder *httptest.ResponseRecorder){
+				require.Equal(t, http.StatusBadRequest, recorder.Code)
+			},
+		},
+		{
+			name: "400 Invalid URI",
+			uri: -2,
+			body: gin.H{
+				"id": recipe.Recipe.ID,
+				"name": "new recipe name",
+				"portion": 5,
+				"steps": gin.H {
+					"String": "step 123",
+					"Valid": true,
+				},
+				"ingredients": ingredients,
+			},
+			setupAuth: func(t *testing.T, req *http.Request, tokenMaker auth.TokenMaker){
+				addAuthorization(t, req, tokenMaker, authBearerType, admin.ID, time.Minute)
+			},
+			buildStubs   : func(storage *dbmock.MockStorage) {
+				arg := db.TxUpdateRecipeParams {
+					Recipe: db.UpdateRecipeParams{
+						ID: recipe.Recipe.ID,
+						Name: "new recipe name",
+						Portion: 5,
+						Steps: sql.NullString{
+							String: "step 123",
+							Valid: true,
+						},
+					},
+					ListIngredients: ingredients,
+				}
+				storage.EXPECT().
+					GetRecipe(gomock.Any(), gomock.Eq(recipe.Recipe.ID)).
+					Times(0)
+				storage.EXPECT().
+					GetPermission(gomock.Any(), gomock.Eq(admin.ID)).
+					Times(0)
+				storage.EXPECT().
+					UpdateRecipeTx(gomock.Any(), gomock.Eq(arg)).
+					Times(0)
+			},
+			checkResponse: func(recorder *httptest.ResponseRecorder){
+				require.Equal(t, http.StatusBadRequest, recorder.Code)
+			},
+		},
+		{
+			name: "400 Invalid ID JSON",
+			uri: recipe.Recipe.ID,
+			body: gin.H{
+				"id": -2,
+				"name": "new recipe name",
+				"portion": 5,
+				"steps": gin.H {
+					"String": "step 123",
+					"Valid": true,
+				},
+				"ingredients": ingredients,
+			},
+			setupAuth: func(t *testing.T, req *http.Request, tokenMaker auth.TokenMaker){
+				addAuthorization(t, req, tokenMaker, authBearerType, admin.ID, time.Minute)
+			},
+			buildStubs   : func(storage *dbmock.MockStorage) {
+				arg := db.TxUpdateRecipeParams {
+					Recipe: db.UpdateRecipeParams{
+						ID: recipe.Recipe.ID,
+						Name: "new recipe name",
+						Portion: 5,
+						Steps: sql.NullString{
+							String: "step 123",
+							Valid: true,
+						},
+					},
+					ListIngredients: ingredients,
+				}
+				storage.EXPECT().
+					GetRecipe(gomock.Any(), gomock.Eq(recipe.Recipe.ID)).
+					Times(0)
+				storage.EXPECT().
+					GetPermission(gomock.Any(), gomock.Eq(admin.ID)).
+					Times(0)
+				storage.EXPECT().
+					UpdateRecipeTx(gomock.Any(), gomock.Eq(arg)).
+					Times(0)
+			},
+			checkResponse: func(recorder *httptest.ResponseRecorder){
+				require.Equal(t, http.StatusBadRequest, recorder.Code)
+			},
+		},
+		{
+			name: "400 Invalid Name",
+			uri: recipe.Recipe.ID,
+			body: gin.H{
+				"id": recipe.Recipe.ID,
+				"name": "new recipe NAME",
+				"portion": 5,
+				"steps": gin.H {
+					"String": "step 123",
+					"Valid": true,
+				},
+				"ingredients": ingredients,
+			},
+			setupAuth: func(t *testing.T, req *http.Request, tokenMaker auth.TokenMaker){
+				addAuthorization(t, req, tokenMaker, authBearerType, admin.ID, time.Minute)
+			},
+			buildStubs   : func(storage *dbmock.MockStorage) {
+				arg := db.TxUpdateRecipeParams {
+					Recipe: db.UpdateRecipeParams{
+						ID: recipe.Recipe.ID,
+						Name: "new recipe name",
+						Portion: 5,
+						Steps: sql.NullString{
+							String: "step 123",
+							Valid: true,
+						},
+					},
+					ListIngredients: ingredients,
+				}
+				storage.EXPECT().
+					GetRecipe(gomock.Any(), gomock.Eq(recipe.Recipe.ID)).
+					Times(0)
+				storage.EXPECT().
+					GetPermission(gomock.Any(), gomock.Eq(admin.ID)).
+					Times(0)
+				storage.EXPECT().
+					UpdateRecipeTx(gomock.Any(), gomock.Eq(arg)).
+					Times(0)
+			},
+			checkResponse: func(recorder *httptest.ResponseRecorder){
+				require.Equal(t, http.StatusBadRequest, recorder.Code)
+			},
+		},
+		{
+			name: "400 Invalid Portion",
+			uri: recipe.Recipe.ID,
+			body: gin.H{
+				"id": recipe.Recipe.ID,
+				"name": "new recipe name",
+				"portion": 0,
+				"steps": gin.H {
+					"String": "step 123",
+					"Valid": true,
+				},
+				"ingredients": ingredients,
+			},
+			setupAuth: func(t *testing.T, req *http.Request, tokenMaker auth.TokenMaker){
+				addAuthorization(t, req, tokenMaker, authBearerType, admin.ID, time.Minute)
+			},
+			buildStubs   : func(storage *dbmock.MockStorage) {
+				arg := db.TxUpdateRecipeParams {
+					Recipe: db.UpdateRecipeParams{
+						ID: recipe.Recipe.ID,
+						Name: "new recipe name",
+						Portion: 5,
+						Steps: sql.NullString{
+							String: "step 123",
+							Valid: true,
+						},
+					},
+					ListIngredients: ingredients,
+				}
+				storage.EXPECT().
+					GetRecipe(gomock.Any(), gomock.Eq(recipe.Recipe.ID)).
+					Times(0)
+				storage.EXPECT().
+					GetPermission(gomock.Any(), gomock.Eq(admin.ID)).
+					Times(0)
+				storage.EXPECT().
+					UpdateRecipeTx(gomock.Any(), gomock.Eq(arg)).
+					Times(0)
+			},
+			checkResponse: func(recorder *httptest.ResponseRecorder){
+				require.Equal(t, http.StatusBadRequest, recorder.Code)
+			},
+		},
+		{
+			name: "400 Invalid Ingredients",
+			uri: recipe.Recipe.ID,
+			body: gin.H{
+				"id": recipe.Recipe.ID,
+				"name": "new recipe name",
+				"portion": 5,
+				"steps": gin.H {
+					"String": "step 123",
+					"Valid": true,
+				},
+				"ingredients": db.ListIngredientParam{},
+			},
+			setupAuth: func(t *testing.T, req *http.Request, tokenMaker auth.TokenMaker){
+				addAuthorization(t, req, tokenMaker, authBearerType, admin.ID, time.Minute)
+			},
+			buildStubs   : func(storage *dbmock.MockStorage) {
+				arg := db.TxUpdateRecipeParams {
+					Recipe: db.UpdateRecipeParams{
+						ID: recipe.Recipe.ID,
+						Name: "new recipe name",
+						Portion: 5,
+						Steps: sql.NullString{
+							String: "step 123",
+							Valid: true,
+						},
+					},
+					ListIngredients: ingredients,
+				}
+				storage.EXPECT().
+					GetRecipe(gomock.Any(), gomock.Eq(recipe.Recipe.ID)).
+					Times(0)
+				storage.EXPECT().
+					GetPermission(gomock.Any(), gomock.Eq(admin.ID)).
+					Times(0)
+				storage.EXPECT().
+					UpdateRecipeTx(gomock.Any(), gomock.Eq(arg)).
+					Times(0)
+			},
+			checkResponse: func(recorder *httptest.ResponseRecorder){
+				require.Equal(t, http.StatusBadRequest, recorder.Code)
+			},
+		},
+		{
+			name: "403 Forbidden",
+			uri: recipe.Recipe.ID,
+			body: gin.H{
+				"id": recipe.Recipe.ID,
+				"name": "new recipe name",
+				"portion": 5,
+				"steps": gin.H {
+					"String": "step 123",
+					"Valid": true,
+				},
+				"ingredients": ingredients,
+			},
+			setupAuth: func(t *testing.T, req *http.Request, tokenMaker auth.TokenMaker){
+				id,err := uuid.NewRandom()
+				require.NoError(t, err)
+				addAuthorization(t, req, tokenMaker, authBearerType, id, time.Minute)
+			},
+			buildStubs   : func(storage *dbmock.MockStorage) {
+				arg := db.TxUpdateRecipeParams {
+					Recipe: db.UpdateRecipeParams{
+						ID: recipe.Recipe.ID,
+						Name: "new recipe name",
+						Portion: 5,
+						Steps: sql.NullString{
+							String: "step 123",
+							Valid: true,
+						},
+					},
+					ListIngredients: ingredients,
+				}
+				storage.EXPECT().
+					GetRecipe(gomock.Any(), gomock.Eq(recipe.Recipe.ID)).
+					Times(1).
+					Return(recipe.Recipe, nil)
+				storage.EXPECT().
+					GetPermission(gomock.Any(), gomock.Not(admin.ID)).
+					Times(1).
+					Return(db.GetPermissionRow{
+						Role: "common",
+					}, nil)
+				storage.EXPECT().
+					UpdateRecipeTx(gomock.Any(), gomock.Eq(arg)).
+					Times(0)
+			},
+			checkResponse: func(recorder *httptest.ResponseRecorder){
+				require.Equal(t, http.StatusForbidden, recorder.Code)
+			},
+		},
+		{
+			name: "404 Get Not Found",
+			uri: recipe.Recipe.ID,
+			body: gin.H{
+				"id": recipe.Recipe.ID,
+				"name": "new recipe name",
+				"portion": 5,
+				"steps": gin.H {
+					"String": "step 123",
+					"Valid": true,
+				},
+				"ingredients": ingredients,
+			},
+			setupAuth: func(t *testing.T, req *http.Request, tokenMaker auth.TokenMaker){
+				addAuthorization(t, req, tokenMaker, authBearerType, admin.ID, time.Minute)
+			},
+			buildStubs   : func(storage *dbmock.MockStorage) {
+				arg := db.TxUpdateRecipeParams {
+					Recipe: db.UpdateRecipeParams{
+						ID: recipe.Recipe.ID,
+						Name: "new recipe name",
+						Portion: 5,
+						Steps: sql.NullString{
+							String: "step 123",
+							Valid: true,
+						},
+					},
+					ListIngredients: ingredients,
+				}
+				storage.EXPECT().
+					GetRecipe(gomock.Any(), gomock.Eq(recipe.Recipe.ID)).
+					Times(1).
+					Return(db.Recipe{}, sql.ErrNoRows)
+				storage.EXPECT().
+					GetPermission(gomock.Any(), gomock.Eq(admin.ID)).
+					Times(0)
+				storage.EXPECT().
+					UpdateRecipeTx(gomock.Any(), gomock.Eq(arg)).
+					Times(0)
+			},
+			checkResponse: func(recorder *httptest.ResponseRecorder){
+				require.Equal(t, http.StatusNotFound, recorder.Code)
+			},
+		},
+		{
+			name: "500 Get Internal Server Error",
+			uri: recipe.Recipe.ID,
+			body: gin.H{
+				"id": recipe.Recipe.ID,
+				"name": "new recipe name",
+				"portion": 5,
+				"steps": gin.H {
+					"String": "step 123",
+					"Valid": true,
+				},
+				"ingredients": ingredients,
+			},
+			setupAuth: func(t *testing.T, req *http.Request, tokenMaker auth.TokenMaker){
+				addAuthorization(t, req, tokenMaker, authBearerType, admin.ID, time.Minute)
+			},
+			buildStubs   : func(storage *dbmock.MockStorage) {
+				arg := db.TxUpdateRecipeParams {
+					Recipe: db.UpdateRecipeParams{
+						ID: recipe.Recipe.ID,
+						Name: "new recipe name",
+						Portion: 5,
+						Steps: sql.NullString{
+							String: "step 123",
+							Valid: true,
+						},
+					},
+					ListIngredients: ingredients,
+				}
+				storage.EXPECT().
+					GetRecipe(gomock.Any(), gomock.Eq(recipe.Recipe.ID)).
+					Times(1).
+					Return(db.Recipe{}, sql.ErrConnDone)
+				storage.EXPECT().
+					GetPermission(gomock.Any(), gomock.Eq(admin.ID)).
+					Times(0)
+				storage.EXPECT().
+					UpdateRecipeTx(gomock.Any(), gomock.Eq(arg)).
+					Times(0)
+			},
+			checkResponse: func(recorder *httptest.ResponseRecorder){
+				require.Equal(t, http.StatusInternalServerError, recorder.Code)
+			},
+		},
+		{
+			name: "500 Update Internal Server Error",
+			uri: recipe.Recipe.ID,
+			body: gin.H{
+				"id": recipe.Recipe.ID,
+				"name": "new recipe name",
+				"portion": 5,
+				"steps": gin.H {
+					"String": "step 123",
+					"Valid": true,
+				},
+				"ingredients": ingredients,
+			},
+			setupAuth: func(t *testing.T, req *http.Request, tokenMaker auth.TokenMaker){
+				addAuthorization(t, req, tokenMaker, authBearerType, user.ID, time.Minute)
+			},
+			buildStubs   : func(storage *dbmock.MockStorage) {
+				arg := db.TxUpdateRecipeParams {
+					Recipe: db.UpdateRecipeParams{
+						ID: recipe.Recipe.ID,
+						Name: "new recipe name",
+						Portion: 5,
+						Steps: sql.NullString{
+							String: "step 123",
+							Valid: true,
+						},
+					},
+					ListIngredients: ingredients,
+				}
+				storage.EXPECT().
+					GetRecipe(gomock.Any(), gomock.Eq(recipe.Recipe.ID)).
+					Times(1).
+					Return(recipe.Recipe, nil)
+				storage.EXPECT().
+					GetPermission(gomock.Any(), gomock.Eq(user.ID)).
+					Times(1).
+					Return(db.GetPermissionRow{
+						Role: "common",
+					}, nil)
+				storage.EXPECT().
+					UpdateRecipeTx(gomock.Any(), gomock.Eq(arg)).
+					Times(1).
+					Return(db.RecipeResult{}, sql.ErrConnDone)
+			},
+			checkResponse: func(recorder *httptest.ResponseRecorder){
+				require.Equal(t, http.StatusInternalServerError, recorder.Code)
+			},
+		},
+	}
+
+	for i := range testCases {
+		tc := testCases[i]
+
+		t.Run(tc.name, func (t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			storage := dbmock.NewMockStorage(ctrl)
+			tc.buildStubs(storage)
+
+			server := newTestServer(t, storage)
+			recorder := httptest.NewRecorder()
+
+			data, err := json.Marshal(tc.body)
+			require.NoError(t, err)
+
+			url := fmt.Sprintf("/recipe/update/%d", tc.uri)
+			request, err := http.NewRequest(http.MethodPatch, url, bytes.NewReader(data))
+			require.NoError(t, err)
+
+			tc.setupAuth(t, request, server.tokenMaker)
+			server.router.ServeHTTP(recorder, request)
+			tc.checkResponse(recorder)
+		})
+	}
+}
+
 func randomRecipe(author uuid.UUID) db.RecipeResult {
 	recipeId := util.RandomInt(1, 100)
 	return db.RecipeResult{
