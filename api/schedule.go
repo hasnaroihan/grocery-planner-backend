@@ -47,7 +47,7 @@ func (server *Server) listSchedules(ctx *gin.Context) {
 
 	arg := db.ListSchedulesParams {
 		Limit: req.PageSize,
-		Offset: req.PageNum,
+		Offset: (req.PageNum-1)*req.PageSize,
 	}
 	recipes, err := server.storage.ListSchedules(ctx,arg)
 	if err != nil {
@@ -86,7 +86,7 @@ func (server *Server) listSchedulesUser(ctx *gin.Context) {
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 		return
 	}
-	if id != authPayload.Subject || permit.Role != "admin" {
+	if id != authPayload.Subject && permit.Role != "admin" {
 		ctx.JSON(http.StatusForbidden, errorResponse(ErrAccessDenied))
 		return
 	}
@@ -97,7 +97,7 @@ func (server *Server) listSchedulesUser(ctx *gin.Context) {
 			Valid: true,
 		},
 		Limit: req.PageSize,
-		Offset: req.PageNum,
+		Offset: (req.PageNum-1)*req.PageSize,
 	}
 	recipes, err := server.storage.ListSchedulesUser(ctx,arg)
 	if err != nil {
@@ -139,7 +139,7 @@ func (server *Server) deleteSchedule(ctx *gin.Context) {
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 		return
 	}
-	if schedule.Author.UUID != authPayload.Subject || permit.Role != "admin" {
+	if schedule.Author.UUID != authPayload.Subject && permit.Role != "admin" {
 		ctx.JSON(http.StatusForbidden, errorResponse(ErrAccessDenied))
 		return
 	}
@@ -159,7 +159,7 @@ func (server *Server) deleteSchedule(ctx *gin.Context) {
 
 type deleteScheduleRecipeRequest struct {
 	ScheduleID     int64 `form:"scheduleID" binding:"required,min=1"`
-	RecipeID       int64 `form:"recipientID" binding:"required,min=1"`
+	RecipeID       int64 `form:"recipeID" binding:"required,min=1"`
 }
 
 func (server *Server) deleteScheduleRecipe(ctx *gin.Context) {
@@ -187,7 +187,7 @@ func (server *Server) deleteScheduleRecipe(ctx *gin.Context) {
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 		return
 	}
-	if schedule.Author.UUID != authPayload.Subject || permit.Role != "admin" {
+	if schedule.Author.UUID != authPayload.Subject && permit.Role != "admin" {
 		ctx.JSON(http.StatusForbidden, errorResponse(ErrAccessDenied))
 		return
 	}
