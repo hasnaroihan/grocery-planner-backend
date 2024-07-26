@@ -22,10 +22,10 @@ var (
 )
 
 type Server struct {
-	storage db.Storage
-	tokenMaker auth.TokenMaker
+	storage       db.Storage
+	tokenMaker    auth.TokenMaker
 	tokenDuration time.Duration
-	router *gin.Engine
+	router        *gin.Engine
 }
 
 // Server constructor
@@ -40,8 +40,8 @@ func NewServer(storage db.Storage) (*Server, error) {
 		return nil, fmt.Errorf("unable to create PASETO maker: %s", err)
 	}
 	server := &Server{
-		storage: storage,
-		tokenMaker: tokenMaker,
+		storage:       storage,
+		tokenMaker:    tokenMaker,
 		tokenDuration: ACCESS_TOKEN_DURATION,
 	}
 
@@ -50,7 +50,7 @@ func NewServer(storage db.Storage) (*Server, error) {
 	}
 
 	// add routes to the router
-	server.setupRouter()	
+	server.setupRouter()
 
 	return server, nil
 }
@@ -77,9 +77,12 @@ func (server *Server) setupRouter() {
 	adminRouter.POST("/ingredients/add", server.createIngredient)
 	adminRouter.DELETE("/ingredients/delete/:id", server.deleteIngredient)
 	adminRouter.PATCH("/ingredients/update/:id", server.updateIngredient)
-	authRouter.GET("/ingredients/:id", server.getIngredient)
-	authRouter.GET("/ingredients/all", server.listIngredients)
-	authRouter.GET("/ingredients", server.searchIngredients)
+	// authRouter.GET("/ingredients/:id", server.getIngredient)
+	// authRouter.GET("/ingredients/all", server.listIngredients)
+	// authRouter.GET("/ingredients", server.searchIngredients)
+	router.GET("/ingredients/:id", server.getIngredient)
+	router.GET("/ingredients/all", server.listIngredients)
+	router.GET("/ingredients", server.searchIngredients)
 
 	// UNITS
 	adminRouter.POST("/unit/add", server.createUnit)
@@ -93,7 +96,7 @@ func (server *Server) setupRouter() {
 	authRouter.DELETE("/recipe/delete/:id", server.deleteRecipe)
 	authRouter.DELETE("/recipe/delete", server.deleteRecipeIngredient)
 	authRouter.PATCH("/recipe/update/:id", server.updateRecipe)
-	router.GET("/recipe/list", server.listRecipesUser)
+	authRouter.GET("/recipe/my", server.listRecipesUser)
 	router.GET("/recipe/:id", server.getRecipe)
 	router.GET("/recipe/all", server.listRecipes)
 	router.GET("/recipe", server.searchRecipe)
@@ -109,7 +112,7 @@ func (server *Server) setupRouter() {
 }
 
 func errorResponse(err error) gin.H {
-	return gin.H{"error" : err.Error()}
+	return gin.H{"error": err.Error()}
 }
 
 func configToken() error {
@@ -119,7 +122,7 @@ func configToken() error {
 	}
 
 	SYM_KEY = os.Getenv("SYM_KEY")
-	ACCESS_TOKEN_DURATION = time.Duration(time.Duration.Minutes(time.Duration(minDuration)))
+	ACCESS_TOKEN_DURATION = time.Duration(time.Duration(minDuration) * time.Minute)
 
 	return nil
 }
