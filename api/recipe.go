@@ -25,13 +25,13 @@ func (server *Server) newRecipe(ctx *gin.Context) {
 		ctx.JSON(http.StatusBadRequest, errorResponse(err))
 		return
 	}
-	
+
 	authPayload := ctx.MustGet(authPayloadKey).(*auth.Payload)
-	arg := db.NewRecipeParams {
-		Name: req.Name,
-		Author: authPayload.Subject,
-		Portion: req.Portion,
-		Steps: req.Steps,
+	arg := db.NewRecipeParams{
+		Name:            req.Name,
+		Author:          authPayload.Subject,
+		Portion:         req.Portion,
+		Steps:           req.Steps,
 		ListIngredients: req.ListIngredients,
 	}
 	recipe, err := server.storage.NewRecipeTx(ctx, arg)
@@ -44,7 +44,7 @@ func (server *Server) newRecipe(ctx *gin.Context) {
 }
 
 type deleteRecipeRequest struct {
-	ID int64	`uri:"id" binding:"required,min=1"`
+	ID int64 `uri:"id" binding:"required,min=1"`
 }
 
 func (server *Server) deleteRecipe(ctx *gin.Context) {
@@ -64,7 +64,7 @@ func (server *Server) deleteRecipe(ctx *gin.Context) {
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 		return
 	}
-	
+
 	// check permission
 	authPayload := ctx.MustGet(authPayloadKey).(*auth.Payload)
 	permit, err := server.storage.GetPermission(ctx, authPayload.Subject)
@@ -125,8 +125,8 @@ func (server *Server) deleteRecipeIngredient(ctx *gin.Context) {
 		return
 	}
 
-	arg := db.DeleteRecipeIngredientParams {
-		RecipeID: req.RecipeID,
+	arg := db.DeleteRecipeIngredientParams{
+		RecipeID:     req.RecipeID,
 		IngredientID: req.IngredientID,
 	}
 
@@ -144,7 +144,7 @@ func (server *Server) deleteRecipeIngredient(ctx *gin.Context) {
 }
 
 type getRecipeRequest struct {
-	ID int64	`uri:"id" binding:"required,min=1"`
+	ID int64 `uri:"id" binding:"required,min=1"`
 }
 
 func (server *Server) getRecipe(ctx *gin.Context) {
@@ -168,23 +168,23 @@ func (server *Server) getRecipe(ctx *gin.Context) {
 }
 
 type listPageRequest struct {
-	PageSize  int32 `form:"pageSize" binding:"required,number"`
-	PageNum int32 `form:"pageNum" binding:"required,number"`
+	PageSize int32 `form:"pageSize" binding:"required,number"`
+	PageNum  int32 `form:"pageNum" binding:"required,number"`
 }
 
 func (server *Server) listRecipes(ctx *gin.Context) {
 	var req listPageRequest
-	
+
 	if err := ctx.ShouldBindQuery(&req); err != nil {
 		ctx.JSON(http.StatusBadRequest, errorResponse(err))
 		return
 	}
 
-	arg := db.ListRecipesParams {
-		Limit: req.PageSize,
-		Offset: (req.PageNum-1)*req.PageSize,
+	arg := db.ListRecipesParams{
+		Limit:  req.PageSize,
+		Offset: (req.PageNum - 1) * req.PageSize,
 	}
-	recipes, err := server.storage.ListRecipes(ctx,arg)
+	recipes, err := server.storage.ListRecipes(ctx, arg)
 	if err != nil {
 		if err != sql.ErrNoRows {
 			ctx.JSON(http.StatusInternalServerError, errorResponse(err))
@@ -197,7 +197,7 @@ func (server *Server) listRecipes(ctx *gin.Context) {
 
 func (server *Server) listRecipesUser(ctx *gin.Context) {
 	var req listPageUserRequest
-	
+
 	if err := ctx.ShouldBindQuery(&req); err != nil {
 		ctx.JSON(http.StatusBadRequest, errorResponse(err))
 		return
@@ -209,12 +209,24 @@ func (server *Server) listRecipesUser(ctx *gin.Context) {
 		return
 	}
 
-	arg := db.ListRecipesUserParams {
-		Author: id,
-		Limit: req.PageSize,
-		Offset: (req.PageNum-1)*req.PageSize,
+	// check permission
+	authPayload := ctx.MustGet(authPayloadKey).(*auth.Payload)
+	permit, err := server.storage.GetPermission(ctx, authPayload.Subject)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
 	}
-	recipes, err := server.storage.ListRecipesUser(ctx,arg)
+	if id != authPayload.Subject && permit.Role != "admin" {
+		ctx.JSON(http.StatusForbidden, errorResponse(ErrAccessDenied))
+		return
+	}
+
+	arg := db.ListRecipesUserParams{
+		Author: id,
+		Limit:  req.PageSize,
+		Offset: (req.PageNum - 1) * req.PageSize,
+	}
+	recipes, err := server.storage.ListRecipesUser(ctx, arg)
 	if err != nil {
 		if err != sql.ErrNoRows {
 			ctx.JSON(http.StatusInternalServerError, errorResponse(err))
@@ -226,25 +238,25 @@ func (server *Server) listRecipesUser(ctx *gin.Context) {
 }
 
 type searchRecipeRequest struct {
-	Name   string `form:"name" binding:"omitempty,lowercase"`
-	PageSize  int32  `form:"pageSize" binding:"required,number"`
-	PageNum int32 `form:"pageNum" binding:"required,number"`
+	Name     string `form:"name" binding:"omitempty,lowercase"`
+	PageSize int32  `form:"pageSize" binding:"required,number"`
+	PageNum  int32  `form:"pageNum" binding:"required,number"`
 }
 
 func (server *Server) searchRecipe(ctx *gin.Context) {
 	var req searchRecipeRequest
-	
+
 	if err := ctx.ShouldBindQuery(&req); err != nil {
 		ctx.JSON(http.StatusBadRequest, errorResponse(err))
 		return
 	}
 
-	arg := db.SearchRecipeParams {
-		Name: fmt.Sprintf("%%%s%%",req.Name),
-		Limit: req.PageSize,
-		Offset: (req.PageNum-1)*req.PageSize,
+	arg := db.SearchRecipeParams{
+		Name:   fmt.Sprintf("%%%s%%", req.Name),
+		Limit:  req.PageSize,
+		Offset: (req.PageNum - 1) * req.PageSize,
 	}
-	recipes, err := server.storage.SearchRecipe(ctx,arg)
+	recipes, err := server.storage.SearchRecipe(ctx, arg)
 	if err != nil {
 		if err != sql.ErrNoRows {
 			ctx.JSON(http.StatusInternalServerError, errorResponse(err))
@@ -256,11 +268,11 @@ func (server *Server) searchRecipe(ctx *gin.Context) {
 }
 
 type updateRecipeUri struct {
-	ID int64	`uri:"id" binding:"required,min=1"`
+	ID int64 `uri:"id" binding:"required,min=1"`
 }
 
 type updateRecipeJSON struct {
-	ID				int64					 `uri:"id" binding:"required,number,min=1"`
+	ID              int64                    `uri:"id" binding:"required,number,min=1"`
 	Name            string                   `json:"name" binding:"required,lowercase"`
 	Portion         int32                    `json:"portion" binding:"required,number,min=1"`
 	Steps           sql.NullString           `json:"steps" binding:"required,alpha"`
@@ -288,10 +300,10 @@ func (server *Server) updateRecipe(ctx *gin.Context) {
 
 	arg := db.TxUpdateRecipeParams{
 		Recipe: db.UpdateRecipeParams{
-			ID: reqUri.ID,
-			Name: reqJSON.Name,
+			ID:      reqUri.ID,
+			Name:    reqJSON.Name,
 			Portion: reqJSON.Portion,
-			Steps: reqJSON.Steps,
+			Steps:   reqJSON.Steps,
 		},
 		ListIngredients: reqJSON.ListIngredients,
 	}

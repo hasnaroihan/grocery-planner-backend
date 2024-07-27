@@ -908,6 +908,7 @@ func TestListRecipesAPI(t *testing.T) {
 
 func TestListRecipesUserAPI(t *testing.T) {
 	user, _ := randomUser(t)
+	extraID := uuid.New()
 	recipes := []db.Recipe{
 		randomRecipe(user.ID).Recipe,
 		randomRecipe(user.ID).Recipe,
@@ -933,6 +934,12 @@ func TestListRecipesUserAPI(t *testing.T) {
 					Limit:  2,
 					Offset: 0,
 				}
+				storage.EXPECT().
+					GetPermission(gomock.Any(), gomock.Eq(user.ID)).
+					Times(1).
+					Return(db.GetPermissionRow{
+						Role: "common",
+					}, nil)
 				storage.EXPECT().
 					ListRecipesUser(gomock.Any(), gomock.Eq(arg)).
 					Times(1).
@@ -963,6 +970,32 @@ func TestListRecipesUserAPI(t *testing.T) {
 			},
 		},
 		{
+			name:  "403 Forbidden",
+			query: fmt.Sprintf("author=%s&pageSize=2&pageNum=1", extraID.String()),
+			setupAuth: func(t *testing.T, req *http.Request, tokenMaker auth.TokenMaker) {
+				addAuthorization(t, req, tokenMaker, authBearerType, user.ID, time.Minute)
+			},
+			buildStubs: func(storage *dbmock.MockStorage) {
+				arg := db.ListRecipesUserParams{
+					Author: extraID,
+					Limit:  2,
+					Offset: 0,
+				}
+				storage.EXPECT().
+					GetPermission(gomock.Any(), gomock.Eq(user.ID)).
+					Times(1).
+					Return(db.GetPermissionRow{
+						Role: "common",
+					}, nil)
+				storage.EXPECT().
+					ListRecipesUser(gomock.Any(), gomock.Eq(arg)).
+					Times(0)
+			},
+			checkResponse: func(recorder *httptest.ResponseRecorder) {
+				require.Equal(t, http.StatusForbidden, recorder.Code)
+			},
+		},
+		{
 			name:  "500 Internal Server Error",
 			query: fmt.Sprintf("author=%s&pageSize=2&pageNum=1", user.ID.String()),
 			setupAuth: func(t *testing.T, req *http.Request, tokenMaker auth.TokenMaker) {
@@ -974,6 +1007,12 @@ func TestListRecipesUserAPI(t *testing.T) {
 					Limit:  2,
 					Offset: 0,
 				}
+				storage.EXPECT().
+					GetPermission(gomock.Any(), gomock.Eq(user.ID)).
+					Times(1).
+					Return(db.GetPermissionRow{
+						Role: "common",
+					}, nil)
 				storage.EXPECT().
 					ListRecipesUser(gomock.Any(), gomock.Eq(arg)).
 					Times(1).
