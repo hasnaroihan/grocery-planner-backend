@@ -9,12 +9,12 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/golang/mock/gomock"
 	"github.com/google/uuid"
 	"github.com/hasnaroihan/grocery-planner/auth"
 	dbmock "github.com/hasnaroihan/grocery-planner/db/mock"
 	db "github.com/hasnaroihan/grocery-planner/db/sqlc"
 	"github.com/stretchr/testify/require"
+	gomock "go.uber.org/mock/gomock"
 )
 
 func addAuthorization(
@@ -127,12 +127,12 @@ func TestAdminMiddleware(t *testing.T) {
 			},
 			buildStubs: func(storage *dbmock.MockStorage) {
 				storage.EXPECT().
-				GetPermission(gomock.Any(), gomock.Eq(admin.ID)).
-				Times(1).
-				Return(db.GetPermissionRow{
-					Role: "admin",
-					VerifiedAt: sql.NullTime{},
-				}, nil)
+					GetPermission(gomock.Any(), gomock.Eq(admin.ID)).
+					Times(1).
+					Return(db.GetPermissionRow{
+						Role:       "admin",
+						VerifiedAt: sql.NullTime{},
+					}, nil)
 			},
 			checkResponse: func(t *testing.T, rec *httptest.ResponseRecorder) {
 				require.Equal(t, http.StatusOK, rec.Code)
@@ -145,12 +145,12 @@ func TestAdminMiddleware(t *testing.T) {
 			},
 			buildStubs: func(storage *dbmock.MockStorage) {
 				storage.EXPECT().
-				GetPermission(gomock.Any(), gomock.Eq(user.ID)).
-				Times(1).
-				Return(db.GetPermissionRow{
-					Role: "common",
-					VerifiedAt: sql.NullTime{},
-				}, nil)
+					GetPermission(gomock.Any(), gomock.Eq(user.ID)).
+					Times(1).
+					Return(db.GetPermissionRow{
+						Role:       "common",
+						VerifiedAt: sql.NullTime{},
+					}, nil)
 			},
 			checkResponse: func(t *testing.T, rec *httptest.ResponseRecorder) {
 				require.Equal(t, http.StatusForbidden, rec.Code)
@@ -163,9 +163,9 @@ func TestAdminMiddleware(t *testing.T) {
 			},
 			buildStubs: func(storage *dbmock.MockStorage) {
 				storage.EXPECT().
-				GetPermission(gomock.Any(), gomock.Eq(user.ID)).
-				Times(1).
-				Return(db.GetPermissionRow{}, sql.ErrNoRows)
+					GetPermission(gomock.Any(), gomock.Eq(user.ID)).
+					Times(1).
+					Return(db.GetPermissionRow{}, sql.ErrNoRows)
 			},
 			checkResponse: func(t *testing.T, rec *httptest.ResponseRecorder) {
 				require.Equal(t, http.StatusInternalServerError, rec.Code)

@@ -12,7 +12,6 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/golang/mock/gomock"
 	"github.com/google/uuid"
 	"github.com/hasnaroihan/grocery-planner/auth"
 	dbmock "github.com/hasnaroihan/grocery-planner/db/mock"
@@ -20,6 +19,7 @@ import (
 	"github.com/hasnaroihan/grocery-planner/util"
 	"github.com/lib/pq"
 	"github.com/stretchr/testify/require"
+	gomock "go.uber.org/mock/gomock"
 )
 
 func TestRegisterAPI(t *testing.T) {
@@ -613,7 +613,7 @@ func TestUpdateUserAPI(t *testing.T) {
 	}{
 		{
 			name: "OK User",
-			uri: user.ID.String(),
+			uri:  user.ID.String(),
 			body: gin.H{
 				"id":       user.ID,
 				"username": "new_username",
@@ -646,7 +646,7 @@ func TestUpdateUserAPI(t *testing.T) {
 		},
 		{
 			name: "OK Admin",
-			uri: user.ID.String(),
+			uri:  user.ID.String(),
 			body: gin.H{
 				"id":       user.ID,
 				"username": "new_username",
@@ -679,7 +679,7 @@ func TestUpdateUserAPI(t *testing.T) {
 		},
 		{
 			name: "400 Mismatched UUID",
-			uri: user.ID.String(),
+			uri:  user.ID.String(),
 			body: gin.H{
 				"id":       admin.ID,
 				"username": "new_username",
@@ -707,7 +707,7 @@ func TestUpdateUserAPI(t *testing.T) {
 		},
 		{
 			name: "400 Invalid URI",
-			uri: "fff-0000",
+			uri:  "fff-0000",
 			body: gin.H{
 				"id":       user.ID,
 				"username": "new_username",
@@ -735,7 +735,7 @@ func TestUpdateUserAPI(t *testing.T) {
 		},
 		{
 			name: "400 Invalid UUID",
-			uri: user.ID.String(),
+			uri:  user.ID.String(),
 			body: gin.H{
 				"id":       "ffff-0000",
 				"username": "new_username",
@@ -763,14 +763,14 @@ func TestUpdateUserAPI(t *testing.T) {
 		},
 		{
 			name: "403 Forbidden",
-			uri: user.ID.String(),
+			uri:  user.ID.String(),
 			body: gin.H{
 				"id":       user.ID,
 				"username": "new_username",
 				"email":    "new@grocery-planner.com",
 			},
 			setupAuth: func(t *testing.T, req *http.Request, tokenMaker auth.TokenMaker) {
-				id,_ := uuid.NewRandom()
+				id, _ := uuid.NewRandom()
 				addAuthorization(t, req, tokenMaker, authBearerType, id, time.Minute)
 			},
 			buildStubs: func(storage *dbmock.MockStorage) {
@@ -783,7 +783,7 @@ func TestUpdateUserAPI(t *testing.T) {
 					GetPermission(gomock.Any(), gomock.Any()).
 					Times(1).
 					Return(db.GetPermissionRow{
-						Role: "common",
+						Role:       "common",
 						VerifiedAt: sql.NullTime{},
 					}, nil)
 				storage.EXPECT().
@@ -796,7 +796,7 @@ func TestUpdateUserAPI(t *testing.T) {
 		},
 		{
 			name: "404 Not Found",
-			uri: user.ID.String(),
+			uri:  user.ID.String(),
 			body: gin.H{
 				"id":       user.ID,
 				"username": "new_username",
@@ -829,7 +829,7 @@ func TestUpdateUserAPI(t *testing.T) {
 		},
 		{
 			name: "500 Internal Server Error",
-			uri: user.ID.String(),
+			uri:  user.ID.String(),
 			body: gin.H{
 				"id":       user.ID,
 				"username": "new_username",
@@ -890,8 +890,8 @@ func TestUpdateUserAPI(t *testing.T) {
 }
 
 func TestGetUserAPI(t *testing.T) {
-	user,_ := randomUser(t)
-	admin,_ := randomAdmin(t)
+	user, _ := randomUser(t)
+	admin, _ := randomAdmin(t)
 
 	testCases := []struct {
 		name          string
@@ -902,21 +902,21 @@ func TestGetUserAPI(t *testing.T) {
 	}{
 		{
 			name: "OK User",
-			uri: user.ID.String(),
+			uri:  user.ID.String(),
 			setupAuth: func(t *testing.T, req *http.Request, tokenMaker auth.TokenMaker) {
 				addAuthorization(t, req, tokenMaker, authBearerType, user.ID, time.Minute)
 			},
 			buildStubs: func(storage *dbmock.MockStorage) {
 				storage.EXPECT().
-				GetPermission(gomock.Any(), gomock.Eq(user.ID)).
-				Times(1).
-				Return(db.GetPermissionRow{
-					Role: "common",
-				}, nil)
+					GetPermission(gomock.Any(), gomock.Eq(user.ID)).
+					Times(1).
+					Return(db.GetPermissionRow{
+						Role: "common",
+					}, nil)
 				storage.EXPECT().
-				GetUser(gomock.Any(), gomock.Eq(user.ID)).
-				Times(1).
-				Return(user, nil)
+					GetUser(gomock.Any(), gomock.Eq(user.ID)).
+					Times(1).
+					Return(user, nil)
 			},
 			checkResponse: func(recorder *httptest.ResponseRecorder) {
 				require.Equal(t, http.StatusOK, recorder.Code)
@@ -924,21 +924,21 @@ func TestGetUserAPI(t *testing.T) {
 		},
 		{
 			name: "OK Admin",
-			uri: user.ID.String(),
+			uri:  user.ID.String(),
 			setupAuth: func(t *testing.T, req *http.Request, tokenMaker auth.TokenMaker) {
 				addAuthorization(t, req, tokenMaker, authBearerType, admin.ID, time.Minute)
 			},
 			buildStubs: func(storage *dbmock.MockStorage) {
 				storage.EXPECT().
-				GetPermission(gomock.Any(), gomock.Eq(admin.ID)).
-				Times(1).
-				Return(db.GetPermissionRow{
-					Role: "admin",
-				}, nil)
+					GetPermission(gomock.Any(), gomock.Eq(admin.ID)).
+					Times(1).
+					Return(db.GetPermissionRow{
+						Role: "admin",
+					}, nil)
 				storage.EXPECT().
-				GetUser(gomock.Any(), gomock.Eq(user.ID)).
-				Times(1).
-				Return(user, nil)
+					GetUser(gomock.Any(), gomock.Eq(user.ID)).
+					Times(1).
+					Return(user, nil)
 			},
 			checkResponse: func(recorder *httptest.ResponseRecorder) {
 				require.Equal(t, http.StatusOK, recorder.Code)
@@ -946,17 +946,17 @@ func TestGetUserAPI(t *testing.T) {
 		},
 		{
 			name: "400 Invalid UUID",
-			uri: "ffff-0000",
+			uri:  "ffff-0000",
 			setupAuth: func(t *testing.T, req *http.Request, tokenMaker auth.TokenMaker) {
 				addAuthorization(t, req, tokenMaker, authBearerType, admin.ID, time.Minute)
 			},
 			buildStubs: func(storage *dbmock.MockStorage) {
 				storage.EXPECT().
-				GetPermission(gomock.Any(), gomock.Eq(admin.ID)).
-				Times(0)
+					GetPermission(gomock.Any(), gomock.Eq(admin.ID)).
+					Times(0)
 				storage.EXPECT().
-				GetUser(gomock.Any(), gomock.Any()).
-				Times(0)
+					GetUser(gomock.Any(), gomock.Any()).
+					Times(0)
 			},
 			checkResponse: func(recorder *httptest.ResponseRecorder) {
 				require.Equal(t, http.StatusBadRequest, recorder.Code)
@@ -964,21 +964,21 @@ func TestGetUserAPI(t *testing.T) {
 		},
 		{
 			name: "403 Forbidden",
-			uri: user.ID.String(),
+			uri:  user.ID.String(),
 			setupAuth: func(t *testing.T, req *http.Request, tokenMaker auth.TokenMaker) {
-				id,_ := uuid.NewRandom()
+				id, _ := uuid.NewRandom()
 				addAuthorization(t, req, tokenMaker, authBearerType, id, time.Minute)
 			},
 			buildStubs: func(storage *dbmock.MockStorage) {
 				storage.EXPECT().
-				GetPermission(gomock.Any(), gomock.Any()).
-				Times(1).
-				Return(db.GetPermissionRow{
-					Role: "common",
-				}, nil)
+					GetPermission(gomock.Any(), gomock.Any()).
+					Times(1).
+					Return(db.GetPermissionRow{
+						Role: "common",
+					}, nil)
 				storage.EXPECT().
-				GetUser(gomock.Any(), gomock.Eq(user.ID)).
-				Times(0)
+					GetUser(gomock.Any(), gomock.Eq(user.ID)).
+					Times(0)
 			},
 			checkResponse: func(recorder *httptest.ResponseRecorder) {
 				require.Equal(t, http.StatusForbidden, recorder.Code)
@@ -986,21 +986,21 @@ func TestGetUserAPI(t *testing.T) {
 		},
 		{
 			name: "404 Not Found",
-			uri: user.ID.String(),
+			uri:  user.ID.String(),
 			setupAuth: func(t *testing.T, req *http.Request, tokenMaker auth.TokenMaker) {
 				addAuthorization(t, req, tokenMaker, authBearerType, admin.ID, time.Minute)
 			},
 			buildStubs: func(storage *dbmock.MockStorage) {
 				storage.EXPECT().
-				GetPermission(gomock.Any(), gomock.Eq(admin.ID)).
-				Times(1).
-				Return(db.GetPermissionRow{
-					Role: "admin",
-				}, nil)
+					GetPermission(gomock.Any(), gomock.Eq(admin.ID)).
+					Times(1).
+					Return(db.GetPermissionRow{
+						Role: "admin",
+					}, nil)
 				storage.EXPECT().
-				GetUser(gomock.Any(), gomock.Eq(user.ID)).
-				Times(1).
-				Return(db.User{}, sql.ErrNoRows)
+					GetUser(gomock.Any(), gomock.Eq(user.ID)).
+					Times(1).
+					Return(db.User{}, sql.ErrNoRows)
 			},
 			checkResponse: func(recorder *httptest.ResponseRecorder) {
 				require.Equal(t, http.StatusNotFound, recorder.Code)
@@ -1008,21 +1008,21 @@ func TestGetUserAPI(t *testing.T) {
 		},
 		{
 			name: "500 Internal Server Error",
-			uri: user.ID.String(),
+			uri:  user.ID.String(),
 			setupAuth: func(t *testing.T, req *http.Request, tokenMaker auth.TokenMaker) {
 				addAuthorization(t, req, tokenMaker, authBearerType, admin.ID, time.Minute)
 			},
 			buildStubs: func(storage *dbmock.MockStorage) {
 				storage.EXPECT().
-				GetPermission(gomock.Any(), gomock.Eq(admin.ID)).
-				Times(1).
-				Return(db.GetPermissionRow{
-					Role: "admin",
-				}, nil)
+					GetPermission(gomock.Any(), gomock.Eq(admin.ID)).
+					Times(1).
+					Return(db.GetPermissionRow{
+						Role: "admin",
+					}, nil)
 				storage.EXPECT().
-				GetUser(gomock.Any(), gomock.Eq(user.ID)).
-				Times(1).
-				Return(db.User{}, sql.ErrConnDone)
+					GetUser(gomock.Any(), gomock.Eq(user.ID)).
+					Times(1).
+					Return(db.User{}, sql.ErrConnDone)
 			},
 			checkResponse: func(recorder *httptest.ResponseRecorder) {
 				require.Equal(t, http.StatusInternalServerError, recorder.Code)
@@ -1054,6 +1054,7 @@ func TestGetUserAPI(t *testing.T) {
 		})
 	}
 }
+
 type eqCreateUserParamsMatcher struct {
 	arg      db.CreateUserParams
 	password string

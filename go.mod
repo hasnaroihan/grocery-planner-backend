@@ -12,10 +12,10 @@ require (
 	github.com/gin-gonic/gin v1.8.2
 	github.com/go-playground/validator/v10 v10.11.2
 	github.com/golang-jwt/jwt/v5 v5.0.0-rc.1
-	github.com/golang/mock v1.6.0
 	github.com/lib/pq v1.10.7
 	github.com/o1egl/paseto v1.0.0
 	github.com/stretchr/testify v1.8.1
+	go.uber.org/mock v0.4.0
 	golang.org/x/crypto v0.6.0
 	golang.org/x/exp v0.0.0-20230124195608-d38c7dcee874
 )

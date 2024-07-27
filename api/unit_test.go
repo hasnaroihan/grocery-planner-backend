@@ -11,13 +11,13 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/golang/mock/gomock"
 	"github.com/hasnaroihan/grocery-planner/auth"
 	dbmock "github.com/hasnaroihan/grocery-planner/db/mock"
 	db "github.com/hasnaroihan/grocery-planner/db/sqlc"
 	"github.com/hasnaroihan/grocery-planner/util"
 	"github.com/lib/pq"
 	"github.com/stretchr/testify/require"
+	gomock "go.uber.org/mock/gomock"
 )
 
 func TestCreateUnitAPI(t *testing.T) {
@@ -81,7 +81,7 @@ func TestCreateUnitAPI(t *testing.T) {
 		{
 			name: "500 Connection Done",
 			body: gin.H{
-				"name":  unit.Name,
+				"name": unit.Name,
 			},
 			setupAuth: func(t *testing.T, req *http.Request, tokenMaker auth.TokenMaker) {
 				addAuthorization(t, req, tokenMaker, authBearerType, admin.ID, time.Minute)
@@ -331,7 +331,7 @@ func TestGetUnitAPI(t *testing.T) {
 		},
 		{
 			name: "404 Not Found",
-			uri: unit.ID,
+			uri:  unit.ID,
 			setupAuth: func(t *testing.T, req *http.Request, tokenMaker auth.TokenMaker) {
 				addAuthorization(t, req, tokenMaker, authBearerType, admin.ID, time.Minute)
 			},
@@ -472,9 +472,9 @@ func TestUpdateUnitAPI(t *testing.T) {
 	}{
 		{
 			name: "OK",
-			uri: unit.ID,
+			uri:  unit.ID,
 			body: gin.H{
-				"id":       unit.ID,
+				"id":   unit.ID,
 				"name": "new unit",
 			},
 			setupAuth: func(t *testing.T, req *http.Request, tokenMaker auth.TokenMaker) {
@@ -482,7 +482,7 @@ func TestUpdateUnitAPI(t *testing.T) {
 			},
 			buildStubs: func(storage *dbmock.MockStorage) {
 				arg := db.UpdateUnitParams{
-					ID: unit.ID,
+					ID:   unit.ID,
 					Name: "new unit",
 				}
 				storage.EXPECT().
@@ -503,9 +503,9 @@ func TestUpdateUnitAPI(t *testing.T) {
 		},
 		{
 			name: "400 Mismatched ID",
-			uri: unit.ID,
+			uri:  unit.ID,
 			body: gin.H{
-				"id":       unit.ID + 1,
+				"id":   unit.ID + 1,
 				"name": "new unit",
 			},
 			setupAuth: func(t *testing.T, req *http.Request, tokenMaker auth.TokenMaker) {
@@ -513,7 +513,7 @@ func TestUpdateUnitAPI(t *testing.T) {
 			},
 			buildStubs: func(storage *dbmock.MockStorage) {
 				arg := db.UpdateUnitParams{
-					ID: unit.ID,
+					ID:   unit.ID,
 					Name: "new unit",
 				}
 				storage.EXPECT().
@@ -533,9 +533,9 @@ func TestUpdateUnitAPI(t *testing.T) {
 		},
 		{
 			name: "400 Invalid UUID",
-			uri: -unit.ID,
+			uri:  -unit.ID,
 			body: gin.H{
-				"id":       -unit.ID,
+				"id":   -unit.ID,
 				"name": "new unit",
 			},
 			setupAuth: func(t *testing.T, req *http.Request, tokenMaker auth.TokenMaker) {
@@ -543,7 +543,7 @@ func TestUpdateUnitAPI(t *testing.T) {
 			},
 			buildStubs: func(storage *dbmock.MockStorage) {
 				arg := db.UpdateUnitParams{
-					ID: -unit.ID,
+					ID:   -unit.ID,
 					Name: "new unit",
 				}
 				storage.EXPECT().
@@ -563,9 +563,9 @@ func TestUpdateUnitAPI(t *testing.T) {
 		},
 		{
 			name: "404 Not Found",
-			uri: unit.ID,
+			uri:  unit.ID,
 			body: gin.H{
-				"id":       unit.ID,
+				"id":   unit.ID,
 				"name": "new unit",
 			},
 			setupAuth: func(t *testing.T, req *http.Request, tokenMaker auth.TokenMaker) {
@@ -573,7 +573,7 @@ func TestUpdateUnitAPI(t *testing.T) {
 			},
 			buildStubs: func(storage *dbmock.MockStorage) {
 				arg := db.UpdateUnitParams{
-					ID: unit.ID,
+					ID:   unit.ID,
 					Name: "new unit",
 				}
 				storage.EXPECT().
@@ -594,9 +594,9 @@ func TestUpdateUnitAPI(t *testing.T) {
 		},
 		{
 			name: "500 Internal Server Error",
-			uri: unit.ID,
+			uri:  unit.ID,
 			body: gin.H{
-				"id":       unit.ID,
+				"id":   unit.ID,
 				"name": "new unit",
 			},
 			setupAuth: func(t *testing.T, req *http.Request, tokenMaker auth.TokenMaker) {
@@ -604,7 +604,7 @@ func TestUpdateUnitAPI(t *testing.T) {
 			},
 			buildStubs: func(storage *dbmock.MockStorage) {
 				arg := db.UpdateUnitParams{
-					ID: unit.ID,
+					ID:   unit.ID,
 					Name: "new unit",
 				}
 				storage.EXPECT().
@@ -654,7 +654,7 @@ func TestUpdateUnitAPI(t *testing.T) {
 
 func randomUnit() db.Unit {
 	return db.Unit{
-		ID: int32(util.RandomInt(1,100)),
+		ID:   int32(util.RandomInt(1, 100)),
 		Name: util.RandomUnit(),
 	}
 }

@@ -11,13 +11,13 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/golang/mock/gomock"
 	"github.com/google/uuid"
 	"github.com/hasnaroihan/grocery-planner/auth"
 	dbmock "github.com/hasnaroihan/grocery-planner/db/mock"
 	db "github.com/hasnaroihan/grocery-planner/db/sqlc"
 	"github.com/hasnaroihan/grocery-planner/util"
 	"github.com/stretchr/testify/require"
+	gomock "go.uber.org/mock/gomock"
 )
 
 func TestGenerateGroceriesAPI(t *testing.T) {
@@ -42,9 +42,9 @@ func TestGenerateGroceriesAPI(t *testing.T) {
 				"author":  uuid.NullUUID{},
 				"recipes": scheduleRecipe,
 			},
-			buildStubs:    func(storage *dbmock.MockStorage) {
-				arg := db.GenerateGroceriesParam {
-					Author: uuid.NullUUID{},
+			buildStubs: func(storage *dbmock.MockStorage) {
+				arg := db.GenerateGroceriesParam{
+					Author:  uuid.NullUUID{},
 					Recipes: scheduleRecipe,
 				}
 				storage.EXPECT().
@@ -62,9 +62,9 @@ func TestGenerateGroceriesAPI(t *testing.T) {
 				"author":  uuid.NullUUID{},
 				"recipes": db.ScheduleRecipePortion{},
 			},
-			buildStubs:    func(storage *dbmock.MockStorage) {
-				arg := db.GenerateGroceriesParam {
-					Author: uuid.NullUUID{},
+			buildStubs: func(storage *dbmock.MockStorage) {
+				arg := db.GenerateGroceriesParam{
+					Author:  uuid.NullUUID{},
 					Recipes: scheduleRecipe,
 				}
 				storage.EXPECT().
@@ -81,9 +81,9 @@ func TestGenerateGroceriesAPI(t *testing.T) {
 				"author":  uuid.NullUUID{},
 				"recipes": scheduleRecipe,
 			},
-			buildStubs:    func(storage *dbmock.MockStorage) {
-				arg := db.GenerateGroceriesParam {
-					Author: uuid.NullUUID{},
+			buildStubs: func(storage *dbmock.MockStorage) {
+				arg := db.GenerateGroceriesParam{
+					Author:  uuid.NullUUID{},
 					Recipes: scheduleRecipe,
 				}
 				storage.EXPECT().
@@ -242,9 +242,9 @@ func TestListSchedulesAPI(t *testing.T) {
 }
 
 func TestListSchedulesUserAPI(t *testing.T) {
-	user,_ := randomUser(t)
-	admin,_ := randomAdmin(t)
-	schedules := []db.Schedule {
+	user, _ := randomUser(t)
+	admin, _ := randomAdmin(t)
+	schedules := []db.Schedule{
 		randomSchedule(uuid.NullUUID{UUID: user.ID, Valid: true}).Schedule,
 		randomSchedule(uuid.NullUUID{UUID: user.ID, Valid: true}).Schedule,
 		randomSchedule(uuid.NullUUID{UUID: user.ID, Valid: true}).Schedule,
@@ -270,11 +270,11 @@ func TestListSchedulesUserAPI(t *testing.T) {
 					Offset: 0,
 				}
 				storage.EXPECT().
-				GetPermission(gomock.Any(), gomock.Eq(user.ID)).
-				Times(1).
-				Return(db.GetPermissionRow{
-					Role: "common",
-				}, nil)
+					GetPermission(gomock.Any(), gomock.Eq(user.ID)).
+					Times(1).
+					Return(db.GetPermissionRow{
+						Role: "common",
+					}, nil)
 				storage.EXPECT().
 					ListSchedulesUser(gomock.Any(), gomock.Eq(arg)).
 					Times(1).
@@ -297,11 +297,11 @@ func TestListSchedulesUserAPI(t *testing.T) {
 					Offset: 0,
 				}
 				storage.EXPECT().
-				GetPermission(gomock.Any(), gomock.Eq(admin.ID)).
-				Times(1).
-				Return(db.GetPermissionRow{
-					Role: "admin",
-				}, nil)
+					GetPermission(gomock.Any(), gomock.Eq(admin.ID)).
+					Times(1).
+					Return(db.GetPermissionRow{
+						Role: "admin",
+					}, nil)
 				storage.EXPECT().
 					ListSchedulesUser(gomock.Any(), gomock.Eq(arg)).
 					Times(1).
@@ -315,7 +315,7 @@ func TestListSchedulesUserAPI(t *testing.T) {
 			name:  "403 Forbidden",
 			query: fmt.Sprintf("author=%s&pageSize=2&pageNum=1", user.ID.String()),
 			setupAuth: func(t *testing.T, req *http.Request, tokenMaker auth.TokenMaker) {
-				id,_ := uuid.NewRandom()
+				id, _ := uuid.NewRandom()
 				addAuthorization(t, req, tokenMaker, authBearerType, id, time.Minute)
 			},
 			buildStubs: func(storage *dbmock.MockStorage) {
@@ -325,11 +325,11 @@ func TestListSchedulesUserAPI(t *testing.T) {
 					Offset: 0,
 				}
 				storage.EXPECT().
-				GetPermission(gomock.Any(), gomock.Any()).
-				Times(1).
-				Return(db.GetPermissionRow{
-					Role: "common",
-				}, nil)
+					GetPermission(gomock.Any(), gomock.Any()).
+					Times(1).
+					Return(db.GetPermissionRow{
+						Role: "common",
+					}, nil)
 				storage.EXPECT().
 					ListSchedulesUser(gomock.Any(), gomock.Eq(arg)).
 					Times(0)
@@ -351,8 +351,8 @@ func TestListSchedulesUserAPI(t *testing.T) {
 					Offset: 0,
 				}
 				storage.EXPECT().
-				GetPermission(gomock.Any(), gomock.Eq(user.ID)).
-				Times(0)
+					GetPermission(gomock.Any(), gomock.Eq(user.ID)).
+					Times(0)
 				storage.EXPECT().
 					ListSchedulesUser(gomock.Any(), gomock.Eq(arg)).
 					Times(0)
@@ -374,11 +374,11 @@ func TestListSchedulesUserAPI(t *testing.T) {
 					Offset: 0,
 				}
 				storage.EXPECT().
-				GetPermission(gomock.Any(), gomock.Eq(admin.ID)).
-				Times(1).
-				Return(db.GetPermissionRow{
-					Role: "admin",
-				}, nil)
+					GetPermission(gomock.Any(), gomock.Eq(admin.ID)).
+					Times(1).
+					Return(db.GetPermissionRow{
+						Role: "admin",
+					}, nil)
 				storage.EXPECT().
 					ListSchedulesUser(gomock.Any(), gomock.Eq(arg)).
 					Times(1).
@@ -673,8 +673,8 @@ func TestDeleteScheduleRecipeAPI(t *testing.T) {
 			},
 			buildStubs: func(storage *dbmock.MockStorage) {
 				arg := db.DeleteScheduleRecipeParams{
-					ScheduleID:     schedule.Schedule.ID,
-					RecipeID: schedule.Recipes[0].RecipeID,
+					ScheduleID: schedule.Schedule.ID,
+					RecipeID:   schedule.Recipes[0].RecipeID,
 				}
 				storage.EXPECT().
 					GetSchedule(gomock.Any(), gomock.Eq(schedule.Schedule.ID)).
@@ -706,8 +706,8 @@ func TestDeleteScheduleRecipeAPI(t *testing.T) {
 			},
 			buildStubs: func(storage *dbmock.MockStorage) {
 				arg := db.DeleteScheduleRecipeParams{
-					ScheduleID:     schedule.Schedule.ID,
-					RecipeID: schedule.Recipes[0].RecipeID,
+					ScheduleID: schedule.Schedule.ID,
+					RecipeID:   schedule.Recipes[0].RecipeID,
 				}
 				storage.EXPECT().
 					GetSchedule(gomock.Any(), gomock.Eq(schedule.Schedule.ID)).
@@ -741,8 +741,8 @@ func TestDeleteScheduleRecipeAPI(t *testing.T) {
 			},
 			buildStubs: func(storage *dbmock.MockStorage) {
 				arg := db.DeleteScheduleRecipeParams{
-					ScheduleID:     schedule.Schedule.ID,
-					RecipeID: schedule.Recipes[0].RecipeID,
+					ScheduleID: schedule.Schedule.ID,
+					RecipeID:   schedule.Recipes[0].RecipeID,
 				}
 				storage.EXPECT().
 					GetSchedule(gomock.Any(), gomock.Eq(schedule.Schedule.ID)).
@@ -771,8 +771,8 @@ func TestDeleteScheduleRecipeAPI(t *testing.T) {
 			},
 			buildStubs: func(storage *dbmock.MockStorage) {
 				arg := db.DeleteScheduleRecipeParams{
-					ScheduleID:     schedule.Schedule.ID,
-					RecipeID: schedule.Recipes[0].RecipeID,
+					ScheduleID: schedule.Schedule.ID,
+					RecipeID:   schedule.Recipes[0].RecipeID,
 				}
 				storage.EXPECT().
 					GetSchedule(gomock.Any(), gomock.Eq(schedule.Schedule.ID)).
@@ -798,8 +798,8 @@ func TestDeleteScheduleRecipeAPI(t *testing.T) {
 			},
 			buildStubs: func(storage *dbmock.MockStorage) {
 				arg := db.DeleteScheduleRecipeParams{
-					ScheduleID:     schedule.Schedule.ID,
-					RecipeID: schedule.Recipes[0].RecipeID,
+					ScheduleID: schedule.Schedule.ID,
+					RecipeID:   schedule.Recipes[0].RecipeID,
 				}
 				storage.EXPECT().
 					GetSchedule(gomock.Any(), gomock.Eq(schedule.Schedule.ID)).
@@ -826,8 +826,8 @@ func TestDeleteScheduleRecipeAPI(t *testing.T) {
 			},
 			buildStubs: func(storage *dbmock.MockStorage) {
 				arg := db.DeleteScheduleRecipeParams{
-					ScheduleID:     schedule.Schedule.ID,
-					RecipeID: schedule.Recipes[0].RecipeID,
+					ScheduleID: schedule.Schedule.ID,
+					RecipeID:   schedule.Recipes[0].RecipeID,
 				}
 				storage.EXPECT().
 					GetSchedule(gomock.Any(), gomock.Eq(schedule.Schedule.ID)).
@@ -854,8 +854,8 @@ func TestDeleteScheduleRecipeAPI(t *testing.T) {
 			},
 			buildStubs: func(storage *dbmock.MockStorage) {
 				arg := db.DeleteScheduleRecipeParams{
-					ScheduleID:     schedule.Schedule.ID,
-					RecipeID: schedule.Recipes[0].RecipeID,
+					ScheduleID: schedule.Schedule.ID,
+					RecipeID:   schedule.Recipes[0].RecipeID,
 				}
 				storage.EXPECT().
 					GetSchedule(gomock.Any(), gomock.Eq(schedule.Schedule.ID)).
@@ -886,8 +886,8 @@ func TestDeleteScheduleRecipeAPI(t *testing.T) {
 			},
 			buildStubs: func(storage *dbmock.MockStorage) {
 				arg := db.DeleteScheduleRecipeParams{
-					ScheduleID:     schedule.Schedule.ID,
-					RecipeID: schedule.Recipes[0].RecipeID,
+					ScheduleID: schedule.Schedule.ID,
+					RecipeID:   schedule.Recipes[0].RecipeID,
 				}
 				storage.EXPECT().
 					GetSchedule(gomock.Any(), gomock.Eq(schedule.Schedule.ID)).
