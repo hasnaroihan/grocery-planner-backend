@@ -12,13 +12,13 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/golang/mock/gomock"
 	"github.com/google/uuid"
 	"github.com/hasnaroihan/grocery-planner/auth"
 	dbmock "github.com/hasnaroihan/grocery-planner/db/mock"
 	db "github.com/hasnaroihan/grocery-planner/db/sqlc"
 	"github.com/hasnaroihan/grocery-planner/util"
 	"github.com/stretchr/testify/require"
+	gomock "go.uber.org/mock/gomock"
 )
 
 func TestNewRecipeAPI(t *testing.T) {
@@ -743,7 +743,7 @@ func TestGetRecipeAPI(t *testing.T) {
 	}{
 		{
 			name: "OK",
-			uri: recipe.Recipe.ID,
+			uri:  recipe.Recipe.ID,
 			buildStubs: func(storage *dbmock.MockStorage) {
 				storage.EXPECT().
 					GetRecipeTx(gomock.Any(), gomock.Eq(recipe.Recipe.ID)).
@@ -756,7 +756,7 @@ func TestGetRecipeAPI(t *testing.T) {
 		},
 		{
 			name: "400 Bad request",
-			uri: -2,
+			uri:  -2,
 			buildStubs: func(storage *dbmock.MockStorage) {
 				storage.EXPECT().
 					GetRecipeTx(gomock.Any(), gomock.Eq(-2)).
@@ -768,7 +768,7 @@ func TestGetRecipeAPI(t *testing.T) {
 		},
 		{
 			name: "404 Not Found",
-			uri: recipe.Recipe.ID,
+			uri:  recipe.Recipe.ID,
 			buildStubs: func(storage *dbmock.MockStorage) {
 				storage.EXPECT().
 					GetRecipeTx(gomock.Any(), gomock.Eq(recipe.Recipe.ID)).
@@ -781,7 +781,7 @@ func TestGetRecipeAPI(t *testing.T) {
 		},
 		{
 			name: "500 Internal Server Error",
-			uri: recipe.Recipe.ID,
+			uri:  recipe.Recipe.ID,
 			buildStubs: func(storage *dbmock.MockStorage) {
 				storage.EXPECT().
 					GetRecipeTx(gomock.Any(), gomock.Eq(recipe.Recipe.ID)).
@@ -818,8 +818,8 @@ func TestGetRecipeAPI(t *testing.T) {
 }
 
 func TestListRecipesAPI(t *testing.T) {
-	user,_ := randomUser(t)
-	recipes := []db.Recipe {
+	user, _ := randomUser(t)
+	recipes := []db.Recipe{
 		randomRecipe(user.ID).Recipe,
 		randomRecipe(user.ID).Recipe,
 		randomRecipe(user.ID).Recipe,
@@ -907,8 +907,9 @@ func TestListRecipesAPI(t *testing.T) {
 }
 
 func TestListRecipesUserAPI(t *testing.T) {
-	user,_ := randomUser(t)
-	recipes := []db.Recipe {
+	user, _ := randomUser(t)
+	extraID := uuid.New()
+	recipes := []db.Recipe{
 		randomRecipe(user.ID).Recipe,
 		randomRecipe(user.ID).Recipe,
 		randomRecipe(user.ID).Recipe,
@@ -917,18 +918,28 @@ func TestListRecipesUserAPI(t *testing.T) {
 	testCases := []struct {
 		name          string
 		query         string
+		setupAuth     func(t *testing.T, req *http.Request, tokenMaker auth.TokenMaker)
 		buildStubs    func(storage *dbmock.MockStorage)
 		checkResponse func(recorder *httptest.ResponseRecorder)
 	}{
 		{
 			name:  "OK",
 			query: fmt.Sprintf("author=%s&pageSize=2&pageNum=1", user.ID.String()),
+			setupAuth: func(t *testing.T, req *http.Request, tokenMaker auth.TokenMaker) {
+				addAuthorization(t, req, tokenMaker, authBearerType, user.ID, time.Minute)
+			},
 			buildStubs: func(storage *dbmock.MockStorage) {
 				arg := db.ListRecipesUserParams{
 					Author: user.ID,
 					Limit:  2,
 					Offset: 0,
 				}
+				storage.EXPECT().
+					GetPermission(gomock.Any(), gomock.Eq(user.ID)).
+					Times(1).
+					Return(db.GetPermissionRow{
+						Role: "common",
+					}, nil)
 				storage.EXPECT().
 					ListRecipesUser(gomock.Any(), gomock.Eq(arg)).
 					Times(1).
@@ -941,6 +952,9 @@ func TestListRecipesUserAPI(t *testing.T) {
 		{
 			name:  "400 Bad Request",
 			query: "pageSize=2",
+			setupAuth: func(t *testing.T, req *http.Request, tokenMaker auth.TokenMaker) {
+				addAuthorization(t, req, tokenMaker, authBearerType, user.ID, time.Minute)
+			},
 			buildStubs: func(storage *dbmock.MockStorage) {
 				arg := db.ListRecipesUserParams{
 					Author: user.ID,
@@ -956,14 +970,49 @@ func TestListRecipesUserAPI(t *testing.T) {
 			},
 		},
 		{
+			name:  "403 Forbidden",
+			query: fmt.Sprintf("author=%s&pageSize=2&pageNum=1", extraID.String()),
+			setupAuth: func(t *testing.T, req *http.Request, tokenMaker auth.TokenMaker) {
+				addAuthorization(t, req, tokenMaker, authBearerType, user.ID, time.Minute)
+			},
+			buildStubs: func(storage *dbmock.MockStorage) {
+				arg := db.ListRecipesUserParams{
+					Author: extraID,
+					Limit:  2,
+					Offset: 0,
+				}
+				storage.EXPECT().
+					GetPermission(gomock.Any(), gomock.Eq(user.ID)).
+					Times(1).
+					Return(db.GetPermissionRow{
+						Role: "common",
+					}, nil)
+				storage.EXPECT().
+					ListRecipesUser(gomock.Any(), gomock.Eq(arg)).
+					Times(0)
+			},
+			checkResponse: func(recorder *httptest.ResponseRecorder) {
+				require.Equal(t, http.StatusForbidden, recorder.Code)
+			},
+		},
+		{
 			name:  "500 Internal Server Error",
 			query: fmt.Sprintf("author=%s&pageSize=2&pageNum=1", user.ID.String()),
+			setupAuth: func(t *testing.T, req *http.Request, tokenMaker auth.TokenMaker) {
+				addAuthorization(t, req, tokenMaker, authBearerType, user.ID, time.Minute)
+			},
 			buildStubs: func(storage *dbmock.MockStorage) {
 				arg := db.ListRecipesUserParams{
 					Author: user.ID,
 					Limit:  2,
 					Offset: 0,
 				}
+				storage.EXPECT().
+					GetPermission(gomock.Any(), gomock.Eq(user.ID)).
+					Times(1).
+					Return(db.GetPermissionRow{
+						Role: "common",
+					}, nil)
 				storage.EXPECT().
 					ListRecipesUser(gomock.Any(), gomock.Eq(arg)).
 					Times(1).
@@ -988,10 +1037,11 @@ func TestListRecipesUserAPI(t *testing.T) {
 			server := newTestServer(t, storage)
 			recorder := httptest.NewRecorder()
 
-			url := fmt.Sprintf("/recipe/list?%s", tc.query)
+			url := fmt.Sprintf("/recipe/my?%s", tc.query)
 			request, err := http.NewRequest(http.MethodGet, url, nil)
-
 			require.NoError(t, err)
+
+			tc.setupAuth(t, request, server.tokenMaker)
 			server.router.ServeHTTP(recorder, request)
 			tc.checkResponse(recorder)
 		})
@@ -999,13 +1049,13 @@ func TestListRecipesUserAPI(t *testing.T) {
 }
 
 func TestSearchRecipesAPI(t *testing.T) {
-	user,_ := randomUser(t)
+	user, _ := randomUser(t)
 	rec := randomRecipe(user.ID)
-	recipes := []db.SearchRecipeRow {
+	recipes := []db.SearchRecipeRow{
 		{
-			ID: rec.Recipe.ID,
-			Name: rec.Recipe.Name,
-			Author: rec.Recipe.Author,
+			ID:         rec.Recipe.ID,
+			Name:       rec.Recipe.Name,
+			Author:     rec.Recipe.Author,
 			ModifiedAt: rec.Recipe.ModifiedAt,
 		},
 	}
@@ -1021,7 +1071,7 @@ func TestSearchRecipesAPI(t *testing.T) {
 			query: fmt.Sprintf("name=%s&pageSize=2&pageNum=1", strings.ToLower(recipes[0].Name)),
 			buildStubs: func(storage *dbmock.MockStorage) {
 				arg := db.SearchRecipeParams{
-					Name:	fmt.Sprintf("%%%s%%", strings.ToLower(recipes[0].Name)),
+					Name:   fmt.Sprintf("%%%s%%", strings.ToLower(recipes[0].Name)),
 					Limit:  2,
 					Offset: 0,
 				}
@@ -1039,7 +1089,7 @@ func TestSearchRecipesAPI(t *testing.T) {
 			query: fmt.Sprintf("name=%s&pageSize=2&pageNum=1", recipes[0].Name),
 			buildStubs: func(storage *dbmock.MockStorage) {
 				arg := db.SearchRecipeParams{
-					Name:	fmt.Sprintf("%%%s%%", recipes[0].Name),
+					Name:   fmt.Sprintf("%%%s%%", recipes[0].Name),
 					Limit:  2,
 					Offset: 0,
 				}
@@ -1056,7 +1106,7 @@ func TestSearchRecipesAPI(t *testing.T) {
 			query: fmt.Sprintf("name=%s&pageSize=2&pageNum=1", strings.ToLower(recipes[0].Name)),
 			buildStubs: func(storage *dbmock.MockStorage) {
 				arg := db.SearchRecipeParams{
-					Name:	fmt.Sprintf("%%%s%%", strings.ToLower(recipes[0].Name)),
+					Name:   fmt.Sprintf("%%%s%%", strings.ToLower(recipes[0].Name)),
 					Limit:  2,
 					Offset: 0,
 				}
@@ -1095,8 +1145,8 @@ func TestSearchRecipesAPI(t *testing.T) {
 }
 
 func TestUpdateRecipeAPI(t *testing.T) {
-	user,_ := randomUser(t)
-	admin,_ := randomAdmin(t)
+	user, _ := randomUser(t)
+	admin, _ := randomAdmin(t)
 	recipe := randomRecipe(user.ID)
 	var ingredients []db.ListIngredientParam
 	for i := range recipe.Ingredients {
@@ -1112,38 +1162,38 @@ func TestUpdateRecipeAPI(t *testing.T) {
 	}
 
 	testCases := []struct {
-		name string
-		uri int64
-		body gin.H
+		name          string
+		uri           int64
+		body          gin.H
 		setupAuth     func(t *testing.T, req *http.Request, tokenMaker auth.TokenMaker)
 		buildStubs    func(storage *dbmock.MockStorage)
 		checkResponse func(recorder *httptest.ResponseRecorder)
 	}{
 		{
 			name: "OK User",
-			uri: recipe.Recipe.ID,
+			uri:  recipe.Recipe.ID,
 			body: gin.H{
-				"id": recipe.Recipe.ID,
-				"name": "new recipe name",
+				"id":      recipe.Recipe.ID,
+				"name":    "new recipe name",
 				"portion": 5,
-				"steps": gin.H {
+				"steps": gin.H{
 					"String": "step 123",
-					"Valid": true,
+					"Valid":  true,
 				},
 				"ingredients": ingredients,
 			},
-			setupAuth: func(t *testing.T, req *http.Request, tokenMaker auth.TokenMaker){
+			setupAuth: func(t *testing.T, req *http.Request, tokenMaker auth.TokenMaker) {
 				addAuthorization(t, req, tokenMaker, authBearerType, user.ID, time.Minute)
 			},
-			buildStubs   : func(storage *dbmock.MockStorage) {
-				arg := db.TxUpdateRecipeParams {
+			buildStubs: func(storage *dbmock.MockStorage) {
+				arg := db.TxUpdateRecipeParams{
 					Recipe: db.UpdateRecipeParams{
-						ID: recipe.Recipe.ID,
-						Name: "new recipe name",
+						ID:      recipe.Recipe.ID,
+						Name:    "new recipe name",
 						Portion: 5,
 						Steps: sql.NullString{
 							String: "step 123",
-							Valid: true,
+							Valid:  true,
 						},
 					},
 					ListIngredients: ingredients,
@@ -1163,35 +1213,35 @@ func TestUpdateRecipeAPI(t *testing.T) {
 					Times(1).
 					Return(recipe, nil)
 			},
-			checkResponse: func(recorder *httptest.ResponseRecorder){
+			checkResponse: func(recorder *httptest.ResponseRecorder) {
 				require.Equal(t, http.StatusOK, recorder.Code)
 			},
 		},
 		{
 			name: "OK Admin",
-			uri: recipe.Recipe.ID,
+			uri:  recipe.Recipe.ID,
 			body: gin.H{
-				"id": recipe.Recipe.ID,
-				"name": "new recipe name",
+				"id":      recipe.Recipe.ID,
+				"name":    "new recipe name",
 				"portion": 5,
-				"steps": gin.H {
+				"steps": gin.H{
 					"String": "step 123",
-					"Valid": true,
+					"Valid":  true,
 				},
 				"ingredients": ingredients,
 			},
-			setupAuth: func(t *testing.T, req *http.Request, tokenMaker auth.TokenMaker){
+			setupAuth: func(t *testing.T, req *http.Request, tokenMaker auth.TokenMaker) {
 				addAuthorization(t, req, tokenMaker, authBearerType, admin.ID, time.Minute)
 			},
-			buildStubs   : func(storage *dbmock.MockStorage) {
-				arg := db.TxUpdateRecipeParams {
+			buildStubs: func(storage *dbmock.MockStorage) {
+				arg := db.TxUpdateRecipeParams{
 					Recipe: db.UpdateRecipeParams{
-						ID: recipe.Recipe.ID,
-						Name: "new recipe name",
+						ID:      recipe.Recipe.ID,
+						Name:    "new recipe name",
 						Portion: 5,
 						Steps: sql.NullString{
 							String: "step 123",
-							Valid: true,
+							Valid:  true,
 						},
 					},
 					ListIngredients: ingredients,
@@ -1211,35 +1261,35 @@ func TestUpdateRecipeAPI(t *testing.T) {
 					Times(1).
 					Return(recipe, nil)
 			},
-			checkResponse: func(recorder *httptest.ResponseRecorder){
+			checkResponse: func(recorder *httptest.ResponseRecorder) {
 				require.Equal(t, http.StatusOK, recorder.Code)
 			},
 		},
 		{
 			name: "400 Mismatched ID",
-			uri: util.RandomInt(1,100),
+			uri:  util.RandomInt(1, 100),
 			body: gin.H{
-				"id": recipe.Recipe.ID,
-				"name": "new recipe name",
+				"id":      recipe.Recipe.ID,
+				"name":    "new recipe name",
 				"portion": 5,
-				"steps": gin.H {
+				"steps": gin.H{
 					"String": "step 123",
-					"Valid": true,
+					"Valid":  true,
 				},
 				"ingredients": ingredients,
 			},
-			setupAuth: func(t *testing.T, req *http.Request, tokenMaker auth.TokenMaker){
+			setupAuth: func(t *testing.T, req *http.Request, tokenMaker auth.TokenMaker) {
 				addAuthorization(t, req, tokenMaker, authBearerType, admin.ID, time.Minute)
 			},
-			buildStubs   : func(storage *dbmock.MockStorage) {
-				arg := db.TxUpdateRecipeParams {
+			buildStubs: func(storage *dbmock.MockStorage) {
+				arg := db.TxUpdateRecipeParams{
 					Recipe: db.UpdateRecipeParams{
-						ID: recipe.Recipe.ID,
-						Name: "new recipe name",
+						ID:      recipe.Recipe.ID,
+						Name:    "new recipe name",
 						Portion: 5,
 						Steps: sql.NullString{
 							String: "step 123",
-							Valid: true,
+							Valid:  true,
 						},
 					},
 					ListIngredients: ingredients,
@@ -1254,35 +1304,35 @@ func TestUpdateRecipeAPI(t *testing.T) {
 					UpdateRecipeTx(gomock.Any(), gomock.Eq(arg)).
 					Times(0)
 			},
-			checkResponse: func(recorder *httptest.ResponseRecorder){
+			checkResponse: func(recorder *httptest.ResponseRecorder) {
 				require.Equal(t, http.StatusBadRequest, recorder.Code)
 			},
 		},
 		{
 			name: "400 Invalid URI",
-			uri: -2,
+			uri:  -2,
 			body: gin.H{
-				"id": recipe.Recipe.ID,
-				"name": "new recipe name",
+				"id":      recipe.Recipe.ID,
+				"name":    "new recipe name",
 				"portion": 5,
-				"steps": gin.H {
+				"steps": gin.H{
 					"String": "step 123",
-					"Valid": true,
+					"Valid":  true,
 				},
 				"ingredients": ingredients,
 			},
-			setupAuth: func(t *testing.T, req *http.Request, tokenMaker auth.TokenMaker){
+			setupAuth: func(t *testing.T, req *http.Request, tokenMaker auth.TokenMaker) {
 				addAuthorization(t, req, tokenMaker, authBearerType, admin.ID, time.Minute)
 			},
-			buildStubs   : func(storage *dbmock.MockStorage) {
-				arg := db.TxUpdateRecipeParams {
+			buildStubs: func(storage *dbmock.MockStorage) {
+				arg := db.TxUpdateRecipeParams{
 					Recipe: db.UpdateRecipeParams{
-						ID: recipe.Recipe.ID,
-						Name: "new recipe name",
+						ID:      recipe.Recipe.ID,
+						Name:    "new recipe name",
 						Portion: 5,
 						Steps: sql.NullString{
 							String: "step 123",
-							Valid: true,
+							Valid:  true,
 						},
 					},
 					ListIngredients: ingredients,
@@ -1297,35 +1347,35 @@ func TestUpdateRecipeAPI(t *testing.T) {
 					UpdateRecipeTx(gomock.Any(), gomock.Eq(arg)).
 					Times(0)
 			},
-			checkResponse: func(recorder *httptest.ResponseRecorder){
+			checkResponse: func(recorder *httptest.ResponseRecorder) {
 				require.Equal(t, http.StatusBadRequest, recorder.Code)
 			},
 		},
 		{
 			name: "400 Invalid ID JSON",
-			uri: recipe.Recipe.ID,
+			uri:  recipe.Recipe.ID,
 			body: gin.H{
-				"id": -2,
-				"name": "new recipe name",
+				"id":      -2,
+				"name":    "new recipe name",
 				"portion": 5,
-				"steps": gin.H {
+				"steps": gin.H{
 					"String": "step 123",
-					"Valid": true,
+					"Valid":  true,
 				},
 				"ingredients": ingredients,
 			},
-			setupAuth: func(t *testing.T, req *http.Request, tokenMaker auth.TokenMaker){
+			setupAuth: func(t *testing.T, req *http.Request, tokenMaker auth.TokenMaker) {
 				addAuthorization(t, req, tokenMaker, authBearerType, admin.ID, time.Minute)
 			},
-			buildStubs   : func(storage *dbmock.MockStorage) {
-				arg := db.TxUpdateRecipeParams {
+			buildStubs: func(storage *dbmock.MockStorage) {
+				arg := db.TxUpdateRecipeParams{
 					Recipe: db.UpdateRecipeParams{
-						ID: recipe.Recipe.ID,
-						Name: "new recipe name",
+						ID:      recipe.Recipe.ID,
+						Name:    "new recipe name",
 						Portion: 5,
 						Steps: sql.NullString{
 							String: "step 123",
-							Valid: true,
+							Valid:  true,
 						},
 					},
 					ListIngredients: ingredients,
@@ -1340,35 +1390,35 @@ func TestUpdateRecipeAPI(t *testing.T) {
 					UpdateRecipeTx(gomock.Any(), gomock.Eq(arg)).
 					Times(0)
 			},
-			checkResponse: func(recorder *httptest.ResponseRecorder){
+			checkResponse: func(recorder *httptest.ResponseRecorder) {
 				require.Equal(t, http.StatusBadRequest, recorder.Code)
 			},
 		},
 		{
 			name: "400 Invalid Name",
-			uri: recipe.Recipe.ID,
+			uri:  recipe.Recipe.ID,
 			body: gin.H{
-				"id": recipe.Recipe.ID,
-				"name": "new recipe NAME",
+				"id":      recipe.Recipe.ID,
+				"name":    "new recipe NAME",
 				"portion": 5,
-				"steps": gin.H {
+				"steps": gin.H{
 					"String": "step 123",
-					"Valid": true,
+					"Valid":  true,
 				},
 				"ingredients": ingredients,
 			},
-			setupAuth: func(t *testing.T, req *http.Request, tokenMaker auth.TokenMaker){
+			setupAuth: func(t *testing.T, req *http.Request, tokenMaker auth.TokenMaker) {
 				addAuthorization(t, req, tokenMaker, authBearerType, admin.ID, time.Minute)
 			},
-			buildStubs   : func(storage *dbmock.MockStorage) {
-				arg := db.TxUpdateRecipeParams {
+			buildStubs: func(storage *dbmock.MockStorage) {
+				arg := db.TxUpdateRecipeParams{
 					Recipe: db.UpdateRecipeParams{
-						ID: recipe.Recipe.ID,
-						Name: "new recipe name",
+						ID:      recipe.Recipe.ID,
+						Name:    "new recipe name",
 						Portion: 5,
 						Steps: sql.NullString{
 							String: "step 123",
-							Valid: true,
+							Valid:  true,
 						},
 					},
 					ListIngredients: ingredients,
@@ -1383,35 +1433,35 @@ func TestUpdateRecipeAPI(t *testing.T) {
 					UpdateRecipeTx(gomock.Any(), gomock.Eq(arg)).
 					Times(0)
 			},
-			checkResponse: func(recorder *httptest.ResponseRecorder){
+			checkResponse: func(recorder *httptest.ResponseRecorder) {
 				require.Equal(t, http.StatusBadRequest, recorder.Code)
 			},
 		},
 		{
 			name: "400 Invalid Portion",
-			uri: recipe.Recipe.ID,
+			uri:  recipe.Recipe.ID,
 			body: gin.H{
-				"id": recipe.Recipe.ID,
-				"name": "new recipe name",
+				"id":      recipe.Recipe.ID,
+				"name":    "new recipe name",
 				"portion": 0,
-				"steps": gin.H {
+				"steps": gin.H{
 					"String": "step 123",
-					"Valid": true,
+					"Valid":  true,
 				},
 				"ingredients": ingredients,
 			},
-			setupAuth: func(t *testing.T, req *http.Request, tokenMaker auth.TokenMaker){
+			setupAuth: func(t *testing.T, req *http.Request, tokenMaker auth.TokenMaker) {
 				addAuthorization(t, req, tokenMaker, authBearerType, admin.ID, time.Minute)
 			},
-			buildStubs   : func(storage *dbmock.MockStorage) {
-				arg := db.TxUpdateRecipeParams {
+			buildStubs: func(storage *dbmock.MockStorage) {
+				arg := db.TxUpdateRecipeParams{
 					Recipe: db.UpdateRecipeParams{
-						ID: recipe.Recipe.ID,
-						Name: "new recipe name",
+						ID:      recipe.Recipe.ID,
+						Name:    "new recipe name",
 						Portion: 5,
 						Steps: sql.NullString{
 							String: "step 123",
-							Valid: true,
+							Valid:  true,
 						},
 					},
 					ListIngredients: ingredients,
@@ -1426,35 +1476,35 @@ func TestUpdateRecipeAPI(t *testing.T) {
 					UpdateRecipeTx(gomock.Any(), gomock.Eq(arg)).
 					Times(0)
 			},
-			checkResponse: func(recorder *httptest.ResponseRecorder){
+			checkResponse: func(recorder *httptest.ResponseRecorder) {
 				require.Equal(t, http.StatusBadRequest, recorder.Code)
 			},
 		},
 		{
 			name: "400 Invalid Ingredients",
-			uri: recipe.Recipe.ID,
+			uri:  recipe.Recipe.ID,
 			body: gin.H{
-				"id": recipe.Recipe.ID,
-				"name": "new recipe name",
+				"id":      recipe.Recipe.ID,
+				"name":    "new recipe name",
 				"portion": 5,
-				"steps": gin.H {
+				"steps": gin.H{
 					"String": "step 123",
-					"Valid": true,
+					"Valid":  true,
 				},
 				"ingredients": db.ListIngredientParam{},
 			},
-			setupAuth: func(t *testing.T, req *http.Request, tokenMaker auth.TokenMaker){
+			setupAuth: func(t *testing.T, req *http.Request, tokenMaker auth.TokenMaker) {
 				addAuthorization(t, req, tokenMaker, authBearerType, admin.ID, time.Minute)
 			},
-			buildStubs   : func(storage *dbmock.MockStorage) {
-				arg := db.TxUpdateRecipeParams {
+			buildStubs: func(storage *dbmock.MockStorage) {
+				arg := db.TxUpdateRecipeParams{
 					Recipe: db.UpdateRecipeParams{
-						ID: recipe.Recipe.ID,
-						Name: "new recipe name",
+						ID:      recipe.Recipe.ID,
+						Name:    "new recipe name",
 						Portion: 5,
 						Steps: sql.NullString{
 							String: "step 123",
-							Valid: true,
+							Valid:  true,
 						},
 					},
 					ListIngredients: ingredients,
@@ -1469,37 +1519,37 @@ func TestUpdateRecipeAPI(t *testing.T) {
 					UpdateRecipeTx(gomock.Any(), gomock.Eq(arg)).
 					Times(0)
 			},
-			checkResponse: func(recorder *httptest.ResponseRecorder){
+			checkResponse: func(recorder *httptest.ResponseRecorder) {
 				require.Equal(t, http.StatusBadRequest, recorder.Code)
 			},
 		},
 		{
 			name: "403 Forbidden",
-			uri: recipe.Recipe.ID,
+			uri:  recipe.Recipe.ID,
 			body: gin.H{
-				"id": recipe.Recipe.ID,
-				"name": "new recipe name",
+				"id":      recipe.Recipe.ID,
+				"name":    "new recipe name",
 				"portion": 5,
-				"steps": gin.H {
+				"steps": gin.H{
 					"String": "step 123",
-					"Valid": true,
+					"Valid":  true,
 				},
 				"ingredients": ingredients,
 			},
-			setupAuth: func(t *testing.T, req *http.Request, tokenMaker auth.TokenMaker){
-				id,err := uuid.NewRandom()
+			setupAuth: func(t *testing.T, req *http.Request, tokenMaker auth.TokenMaker) {
+				id, err := uuid.NewRandom()
 				require.NoError(t, err)
 				addAuthorization(t, req, tokenMaker, authBearerType, id, time.Minute)
 			},
-			buildStubs   : func(storage *dbmock.MockStorage) {
-				arg := db.TxUpdateRecipeParams {
+			buildStubs: func(storage *dbmock.MockStorage) {
+				arg := db.TxUpdateRecipeParams{
 					Recipe: db.UpdateRecipeParams{
-						ID: recipe.Recipe.ID,
-						Name: "new recipe name",
+						ID:      recipe.Recipe.ID,
+						Name:    "new recipe name",
 						Portion: 5,
 						Steps: sql.NullString{
 							String: "step 123",
-							Valid: true,
+							Valid:  true,
 						},
 					},
 					ListIngredients: ingredients,
@@ -1518,35 +1568,35 @@ func TestUpdateRecipeAPI(t *testing.T) {
 					UpdateRecipeTx(gomock.Any(), gomock.Eq(arg)).
 					Times(0)
 			},
-			checkResponse: func(recorder *httptest.ResponseRecorder){
+			checkResponse: func(recorder *httptest.ResponseRecorder) {
 				require.Equal(t, http.StatusForbidden, recorder.Code)
 			},
 		},
 		{
 			name: "404 Get Not Found",
-			uri: recipe.Recipe.ID,
+			uri:  recipe.Recipe.ID,
 			body: gin.H{
-				"id": recipe.Recipe.ID,
-				"name": "new recipe name",
+				"id":      recipe.Recipe.ID,
+				"name":    "new recipe name",
 				"portion": 5,
-				"steps": gin.H {
+				"steps": gin.H{
 					"String": "step 123",
-					"Valid": true,
+					"Valid":  true,
 				},
 				"ingredients": ingredients,
 			},
-			setupAuth: func(t *testing.T, req *http.Request, tokenMaker auth.TokenMaker){
+			setupAuth: func(t *testing.T, req *http.Request, tokenMaker auth.TokenMaker) {
 				addAuthorization(t, req, tokenMaker, authBearerType, admin.ID, time.Minute)
 			},
-			buildStubs   : func(storage *dbmock.MockStorage) {
-				arg := db.TxUpdateRecipeParams {
+			buildStubs: func(storage *dbmock.MockStorage) {
+				arg := db.TxUpdateRecipeParams{
 					Recipe: db.UpdateRecipeParams{
-						ID: recipe.Recipe.ID,
-						Name: "new recipe name",
+						ID:      recipe.Recipe.ID,
+						Name:    "new recipe name",
 						Portion: 5,
 						Steps: sql.NullString{
 							String: "step 123",
-							Valid: true,
+							Valid:  true,
 						},
 					},
 					ListIngredients: ingredients,
@@ -1562,35 +1612,35 @@ func TestUpdateRecipeAPI(t *testing.T) {
 					UpdateRecipeTx(gomock.Any(), gomock.Eq(arg)).
 					Times(0)
 			},
-			checkResponse: func(recorder *httptest.ResponseRecorder){
+			checkResponse: func(recorder *httptest.ResponseRecorder) {
 				require.Equal(t, http.StatusNotFound, recorder.Code)
 			},
 		},
 		{
 			name: "500 Get Internal Server Error",
-			uri: recipe.Recipe.ID,
+			uri:  recipe.Recipe.ID,
 			body: gin.H{
-				"id": recipe.Recipe.ID,
-				"name": "new recipe name",
+				"id":      recipe.Recipe.ID,
+				"name":    "new recipe name",
 				"portion": 5,
-				"steps": gin.H {
+				"steps": gin.H{
 					"String": "step 123",
-					"Valid": true,
+					"Valid":  true,
 				},
 				"ingredients": ingredients,
 			},
-			setupAuth: func(t *testing.T, req *http.Request, tokenMaker auth.TokenMaker){
+			setupAuth: func(t *testing.T, req *http.Request, tokenMaker auth.TokenMaker) {
 				addAuthorization(t, req, tokenMaker, authBearerType, admin.ID, time.Minute)
 			},
-			buildStubs   : func(storage *dbmock.MockStorage) {
-				arg := db.TxUpdateRecipeParams {
+			buildStubs: func(storage *dbmock.MockStorage) {
+				arg := db.TxUpdateRecipeParams{
 					Recipe: db.UpdateRecipeParams{
-						ID: recipe.Recipe.ID,
-						Name: "new recipe name",
+						ID:      recipe.Recipe.ID,
+						Name:    "new recipe name",
 						Portion: 5,
 						Steps: sql.NullString{
 							String: "step 123",
-							Valid: true,
+							Valid:  true,
 						},
 					},
 					ListIngredients: ingredients,
@@ -1606,35 +1656,35 @@ func TestUpdateRecipeAPI(t *testing.T) {
 					UpdateRecipeTx(gomock.Any(), gomock.Eq(arg)).
 					Times(0)
 			},
-			checkResponse: func(recorder *httptest.ResponseRecorder){
+			checkResponse: func(recorder *httptest.ResponseRecorder) {
 				require.Equal(t, http.StatusInternalServerError, recorder.Code)
 			},
 		},
 		{
 			name: "500 Update Internal Server Error",
-			uri: recipe.Recipe.ID,
+			uri:  recipe.Recipe.ID,
 			body: gin.H{
-				"id": recipe.Recipe.ID,
-				"name": "new recipe name",
+				"id":      recipe.Recipe.ID,
+				"name":    "new recipe name",
 				"portion": 5,
-				"steps": gin.H {
+				"steps": gin.H{
 					"String": "step 123",
-					"Valid": true,
+					"Valid":  true,
 				},
 				"ingredients": ingredients,
 			},
-			setupAuth: func(t *testing.T, req *http.Request, tokenMaker auth.TokenMaker){
+			setupAuth: func(t *testing.T, req *http.Request, tokenMaker auth.TokenMaker) {
 				addAuthorization(t, req, tokenMaker, authBearerType, user.ID, time.Minute)
 			},
-			buildStubs   : func(storage *dbmock.MockStorage) {
-				arg := db.TxUpdateRecipeParams {
+			buildStubs: func(storage *dbmock.MockStorage) {
+				arg := db.TxUpdateRecipeParams{
 					Recipe: db.UpdateRecipeParams{
-						ID: recipe.Recipe.ID,
-						Name: "new recipe name",
+						ID:      recipe.Recipe.ID,
+						Name:    "new recipe name",
 						Portion: 5,
 						Steps: sql.NullString{
 							String: "step 123",
-							Valid: true,
+							Valid:  true,
 						},
 					},
 					ListIngredients: ingredients,
@@ -1654,7 +1704,7 @@ func TestUpdateRecipeAPI(t *testing.T) {
 					Times(1).
 					Return(db.RecipeResult{}, sql.ErrConnDone)
 			},
-			checkResponse: func(recorder *httptest.ResponseRecorder){
+			checkResponse: func(recorder *httptest.ResponseRecorder) {
 				require.Equal(t, http.StatusInternalServerError, recorder.Code)
 			},
 		},
@@ -1663,7 +1713,7 @@ func TestUpdateRecipeAPI(t *testing.T) {
 	for i := range testCases {
 		tc := testCases[i]
 
-		t.Run(tc.name, func (t *testing.T) {
+		t.Run(tc.name, func(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 

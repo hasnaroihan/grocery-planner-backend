@@ -12,13 +12,13 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/golang/mock/gomock"
 	"github.com/hasnaroihan/grocery-planner/auth"
 	dbmock "github.com/hasnaroihan/grocery-planner/db/mock"
 	db "github.com/hasnaroihan/grocery-planner/db/sqlc"
 	"github.com/hasnaroihan/grocery-planner/util"
 	"github.com/lib/pq"
 	"github.com/stretchr/testify/require"
+	gomock "go.uber.org/mock/gomock"
 )
 
 func TestCreateIngredientAPI(t *testing.T) {
@@ -485,8 +485,8 @@ func TestSearchIngredientsAPI(t *testing.T) {
 	ingredient := randomIngredient(t)
 	ingredients := []db.SearchIngredientsRow{
 		{
-			ID: ingredient.ID,
-			Name: ingredient.Name,
+			ID:          ingredient.ID,
+			Name:        ingredient.Name,
 			DefaultUnit: ingredient.DefaultUnit,
 		},
 	}
@@ -500,7 +500,7 @@ func TestSearchIngredientsAPI(t *testing.T) {
 		checkResponse func(recorder *httptest.ResponseRecorder)
 	}{
 		{
-			name: "OK",
+			name:  "OK",
 			query: "daging",
 			setupAuth: func(t *testing.T, req *http.Request, tokenMaker auth.TokenMaker) {
 				addAuthorization(t, req, tokenMaker, authBearerType, user.ID, time.Minute)
@@ -516,7 +516,7 @@ func TestSearchIngredientsAPI(t *testing.T) {
 			},
 		},
 		{
-			name: "OK Empty Row",
+			name:  "OK Empty Row",
 			query: "daging",
 			setupAuth: func(t *testing.T, req *http.Request, tokenMaker auth.TokenMaker) {
 				addAuthorization(t, req, tokenMaker, authBearerType, user.ID, time.Minute)
@@ -532,7 +532,7 @@ func TestSearchIngredientsAPI(t *testing.T) {
 			},
 		},
 		{
-			name: "500 Internal Server Error",
+			name:  "500 Internal Server Error",
 			query: "daging",
 			setupAuth: func(t *testing.T, req *http.Request, tokenMaker auth.TokenMaker) {
 				addAuthorization(t, req, tokenMaker, authBearerType, user.ID, time.Minute)
@@ -588,9 +588,9 @@ func TestUpdateIngredientAPI(t *testing.T) {
 	}{
 		{
 			name: "OK",
-			uri: ingredient.ID,
+			uri:  ingredient.ID,
 			body: gin.H{
-				"id":       ingredient.ID,
+				"id":   ingredient.ID,
 				"name": "new ingredient",
 				"defaultUnit": gin.H{
 					"Int32": 3,
@@ -602,7 +602,7 @@ func TestUpdateIngredientAPI(t *testing.T) {
 			},
 			buildStubs: func(storage *dbmock.MockStorage) {
 				arg := db.UpdateIngredientParams{
-					ID: ingredient.ID,
+					ID:   ingredient.ID,
 					Name: "new ingredient",
 					DefaultUnit: sql.NullInt32{
 						Int32: 3,
@@ -627,9 +627,9 @@ func TestUpdateIngredientAPI(t *testing.T) {
 		},
 		{
 			name: "400 Mismatched ID",
-			uri: ingredient.ID,
+			uri:  ingredient.ID,
 			body: gin.H{
-				"id":       ingredient.ID + 1,
+				"id":   ingredient.ID + 1,
 				"name": "new ingredient",
 				"defaultUnit": gin.H{
 					"Int32": 3,
@@ -641,7 +641,7 @@ func TestUpdateIngredientAPI(t *testing.T) {
 			},
 			buildStubs: func(storage *dbmock.MockStorage) {
 				arg := db.UpdateIngredientParams{
-					ID: ingredient.ID,
+					ID:   ingredient.ID,
 					Name: "new ingredient",
 					DefaultUnit: sql.NullInt32{
 						Int32: 3,
@@ -665,9 +665,9 @@ func TestUpdateIngredientAPI(t *testing.T) {
 		},
 		{
 			name: "400 Invalid UUID",
-			uri: -ingredient.ID,
+			uri:  -ingredient.ID,
 			body: gin.H{
-				"id":       -ingredient.ID,
+				"id":   -ingredient.ID,
 				"name": "new ingredient",
 				"defaultUnit": gin.H{
 					"Int32": 3,
@@ -679,7 +679,7 @@ func TestUpdateIngredientAPI(t *testing.T) {
 			},
 			buildStubs: func(storage *dbmock.MockStorage) {
 				arg := db.UpdateIngredientParams{
-					ID: -ingredient.ID,
+					ID:   -ingredient.ID,
 					Name: "new ingredient",
 					DefaultUnit: sql.NullInt32{
 						Int32: 3,
@@ -703,9 +703,9 @@ func TestUpdateIngredientAPI(t *testing.T) {
 		},
 		{
 			name: "404 Not Found",
-			uri: ingredient.ID,
+			uri:  ingredient.ID,
 			body: gin.H{
-				"id":       ingredient.ID,
+				"id":   ingredient.ID,
 				"name": "new ingredient",
 				"defaultUnit": gin.H{
 					"Int32": 3,
@@ -717,7 +717,7 @@ func TestUpdateIngredientAPI(t *testing.T) {
 			},
 			buildStubs: func(storage *dbmock.MockStorage) {
 				arg := db.UpdateIngredientParams{
-					ID: ingredient.ID,
+					ID:   ingredient.ID,
 					Name: "new ingredient",
 					DefaultUnit: sql.NullInt32{
 						Int32: 3,
@@ -742,9 +742,9 @@ func TestUpdateIngredientAPI(t *testing.T) {
 		},
 		{
 			name: "500 Internal Server Error",
-			uri: ingredient.ID,
+			uri:  ingredient.ID,
 			body: gin.H{
-				"id":       ingredient.ID,
+				"id":   ingredient.ID,
 				"name": "new ingredient",
 				"defaultUnit": gin.H{
 					"Int32": 3,
@@ -756,7 +756,7 @@ func TestUpdateIngredientAPI(t *testing.T) {
 			},
 			buildStubs: func(storage *dbmock.MockStorage) {
 				arg := db.UpdateIngredientParams{
-					ID: ingredient.ID,
+					ID:   ingredient.ID,
 					Name: "new ingredient",
 					DefaultUnit: sql.NullInt32{
 						Int32: 3,
